@@ -5,9 +5,8 @@
       <nav class="nav">
         <el-button link @click="$router.push('/')">首页</el-button>
         <el-button link @click="$router.push('/courses')">课程</el-button>
-        <el-button link @click="$router.push('/assessment')">系统诊断</el-button>
+        <el-button link @click="$router.push('/assessment')">体质测评</el-button>
         <el-button link @click="$router.push('/products')">商城</el-button>
-        <el-button link @click="$router.push('/consultation')">咨询</el-button>
         <el-button link @click="$router.push('/my')">我的</el-button>
       </nav>
       <div class="user-actions">

@@ -1,0 +1,36 @@
+# 开发环境文件
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/*.db
+backend/*.db.backup
+backend/nul
+backend/uploads/
+backend/logs/
+
+# 构建目录
+.next/
+frontend/dist/
+frontend/node_modules/
+mobile/node_modules/
+mobile/unpackage/
+
+# 系统文件
+*.log
+*.pid
+*.seed
+*.pid.lock
+.DS_Store
+Thumbs.db
+NUL
+nul
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code
+.claude/

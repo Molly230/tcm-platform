@@ -297,6 +297,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { PLACEHOLDER_IMAGES } from '@/utils/placeholder'
 import { useRoute, useRouter } from 'vue-router'
 import { ShoppingCart } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -317,7 +318,7 @@ const activeDetailTab = ref('details')
 // 计算属性
 const currentImage = computed(() => {
   if (!product.value?.images || product.value.images.length === 0) {
-    return `https://via.placeholder.com/600x400/4CAF50/FFFFFF?text=${encodeURIComponent(product.value?.name || '商品图片')}`
+    return PLACEHOLDER_IMAGES.product
   }
   return product.value.images[currentImageIndex.value]
 })

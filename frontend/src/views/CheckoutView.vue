@@ -42,7 +42,7 @@
             
             <div v-for="item in orderItems" :key="item.id" class="order-item">
               <el-image 
-                :src="item.images?.[0] || 'https://via.placeholder.com/80x80'" 
+                :src="item.images?.[0] || PLACEHOLDER_IMAGES.product" 
                 class="item-image"
               />
               <div class="item-info">
@@ -242,6 +242,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { PLACEHOLDER_IMAGES } from '@/utils/placeholder'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
