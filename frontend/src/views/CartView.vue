@@ -227,6 +227,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageContainer from '../components/PageContainer.vue'
+import { PLACEHOLDER_IMAGES } from '@/utils/placeholder'
 
 const router = useRouter()
 
@@ -313,7 +314,7 @@ const fetchCartItems = async () => {
             original_price: 399,
             category: '保健品',
             stock_quantity: 50,
-            images: ['https://via.placeholder.com/150x150/4CAF50/FFFFFF?text=灵芝孢子粉'],
+            images: [PLACEHOLDER_IMAGES.product],
             specifications: {
               weight: '60粒/瓶',
               origin: '长白山'
@@ -332,7 +333,7 @@ const fetchCartItems = async () => {
             original_price: 228,
             category: '滋补品',
             stock_quantity: 30,
-            images: ['https://via.placeholder.com/150x150/FF9800/FFFFFF?text=人参蜂王浆'],
+            images: [PLACEHOLDER_IMAGES.product],
             specifications: {
               weight: '10ml*20支',
               origin: '东北'
@@ -373,7 +374,7 @@ const getProductImage = (product: any) => {
   if (product.images && product.images.length > 0) {
     return product.images[0]
   }
-  return `https://via.placeholder.com/150x150/4CAF50/FFFFFF?text=${encodeURIComponent(product.name)}`
+  return PLACEHOLDER_IMAGES.product
 }
 
 // 更新商品数量
