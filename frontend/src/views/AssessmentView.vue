@@ -2,17 +2,17 @@
   <div class="assessment">
     <PageContainer>
       <div class="assessment-content">
-        <!-- 系统诊断标题区域 -->
+        <!-- 体质测评标题区域 -->
         <div class="assessment-header">
-          <h1 class="assessment-title">系统诊断</h1>
+          <h1 class="assessment-title">体质测评</h1>
           <p class="assessment-subtitle">用整体性视角分析身体信号和健康状态</p>
         </div>
 
         <!-- 疾病选择界面 -->
         <div class="disease-selection" v-if="!selectedDisease">
           <div class="selection-header">
-            <h2>选择诊断类型</h2>
-            <p>请选择您想要进行的专业诊断，我们将为您提供个性化的健康分析</p>
+            <h2>选择测评类型</h2>
+            <p>请选择您想要进行的专业测评，我们将为您提供个性化的健康分析</p>
           </div>
           
           <div class="disease-cards">
@@ -41,7 +41,7 @@
           </div>
           
           <div class="selected-disease-info">
-            <h2>{{ getDiseaseName(selectedDisease) }}专业诊断</h2>
+            <h2>{{ getDiseaseName(selectedDisease) }}专业测评</h2>
             <p>{{ getDiseaseDescription(selectedDisease) }}</p>
           </div>
           
@@ -66,7 +66,7 @@
           
           <div class="start-actions">
             <el-button type="primary" size="large" class="start-button" @click="startAssessment">
-              开始诊断
+              开始测评
             </el-button>
           </div>
         </div>
@@ -203,15 +203,15 @@
         <div class="result-section" v-if="isCompleted">
           <div class="result-header">
             <el-icon class="success-icon"><SuccessFilled /></el-icon>
-            <h2>{{ getDiseaseName(selectedDisease) }}诊断报告</h2>
-            <p>基于中医理论和您的答题情况，为您生成专业的诊断分析报告</p>
+            <h2>{{ getDiseaseName(selectedDisease) }}测评报告</h2>
+            <p>基于中医理论和您的答题情况，为您生成专业的测评分析报告</p>
           </div>
 
           <!-- 诊断结果展示 -->
           <div class="diagnosis-result" v-if="diagnosisResult">
-            <!-- 诊断报告卡片 -->
+            <!-- 测评报告卡片 -->
             <div class="diagnosis-card">
-              <h3>📋 您的失眠诊断报告</h3>
+              <h3>📋 您的失眠测评报告</h3>
               
               <div class="diagnosis-summary">
                 <div class="syndrome-result">
@@ -291,7 +291,7 @@
               下载报告
             </el-button>
             <el-button @click="restartAssessment">
-              重新诊断
+              重新测评
             </el-button>
           </div>
         </div>
@@ -402,9 +402,9 @@ const getDiseaseName = (code: string) => {
 
 const getDiseaseDescription = (code: string) => {
   const descMap = {
-    insomnia: '基于中医理论的失眠专业诊断，通过19项专业问诊，运用二元诊断算法，为您提供个性化的失眠治疗方案',
-    stomach: '胃病专业诊断（开发中）',
-    aging: '早衰专业诊断（开发中）'
+    insomnia: '基于中医理论的失眠专业测评，通过19项专业问诊，运用二元测评算法，为您提供个性化的失眠治疗方案',
+    stomach: '胃病专业测评（开发中）',
+    aging: '早衰专业测评（开发中）'
   }
   return descMap[code] || ''
 }
@@ -413,14 +413,14 @@ const getCurrentDiseaseFeatures = () => {
   const featureMap = {
     insomnia: [
       { icon: '🔍', title: '专业问诊', description: '19项标准化失眠评估问题' },
-      { icon: '🧠', title: '二元诊断', description: '独创的行列交叉诊断系统' },
+      { icon: '🧠', title: '二元测评', description: '独创的行列交叉测评系统' },
       { icon: '💊', title: '治疗方案', description: '中药、外治、食疗三位一体' }
     ],
     stomach: [
-      { icon: '🎯', title: '胃病诊断', description: '专业胃病诊断（开发中）' }
+      { icon: '🎯', title: '胃病测评', description: '专业胃病测评（开发中）' }
     ],
     aging: [
-      { icon: '🎯', title: '早衰诊断', description: '专业早衰诊断（开发中）' }
+      { icon: '🎯', title: '早衰测评', description: '专业早衰测评（开发中）' }
     ]
   }
   return featureMap[selectedDisease.value] || []
@@ -944,7 +944,7 @@ const submitAssessment = async () => {
     // 减少延时，改善用户体验
     await new Promise(resolve => setTimeout(resolve, 500))
     isCompleted.value = true
-    ElMessage.success('诊断完成！使用588严密逻辑')
+    ElMessage.success('测评完成！使用588严密逻辑')
     
   } catch (error) {
     console.error('提交诊断失败:', error)
@@ -970,7 +970,7 @@ const submitAssessment = async () => {
     }
     await new Promise(resolve => setTimeout(resolve, 500))
     isCompleted.value = true
-    ElMessage.success('诊断完成！（使用备用数据）')
+    ElMessage.success('测评完成！（使用备用数据）')
   } finally {
     isSubmitting.value = false
   }
