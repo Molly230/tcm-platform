@@ -1,7 +1,7 @@
 """
 专家模型
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Enum, Boolean, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Enum, Boolean, JSON, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -52,9 +52,9 @@ class Expert(Base):
     
     # 服务信息
     services_offered = Column(JSON)  # 提供的服务类型 ['text', 'voice', 'video']
-    text_price = Column(Float)  # 文字咨询价格
-    voice_price = Column(Float)  # 语音咨询价格
-    video_price = Column(Float)  # 视频咨询价格
+    text_price = Column(Numeric(8, 2))  # 文字咨询价格
+    voice_price = Column(Numeric(8, 2))  # 语音咨询价格
+    video_price = Column(Numeric(8, 2))  # 视频咨询价格
     
     # 工作时间
     working_hours = Column(JSON)  # 工作时间 {'monday': ['09:00-12:00', '14:00-17:00']}

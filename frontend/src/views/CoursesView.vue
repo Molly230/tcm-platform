@@ -190,37 +190,94 @@ const getCategoryName = (category: string) => {
 
 // 获取课程数据
 const fetchCourses = async () => {
+  loading.value = true
+  
   try {
-    loading.value = true
-    const response = await fetch('/api/courses/')
+    console.log('🚀 开始获取课程数据...')
     
-    if (!response.ok) {
-      throw new Error('获取课程数据失败')
+    // 添加缓存破坏参数和更详细的日志
+    const url = `/api/courses/?t=${Date.now()}`
+    console.log('📡 请求URL:', url)
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-cache'
+    })
+    
+    console.log('📈 响应状态:', response.status)
+    console.log('📈 响应状态文本:', response.statusText) 
+    console.log('✅ response.ok:', response.ok)
+    
+    if (response.status !== 200) {
+      const errorText = await response.text()
+      console.error('❌ 服务器错误响应:', errorText)
+      throw new Error(`服务器返回 ${response.status}`)
     }
     
-    const courses = await response.json()
+    const rawText = await response.text()
+    console.log('📄 原始响应前100字符:', rawText.substring(0, 100))
+    
+    let courses
+    try {
+      courses = JSON.parse(rawText)
+      console.log('✅ JSON解析成功，课程数量:', courses.length)
+    } catch (jsonError) {
+      console.error('❌ JSON解析失败:', jsonError)
+      console.error('❌ 响应内容:', rawText)
+      throw new Error('服务器返回的数据格式错误')
+    }
+    
+    if (!Array.isArray(courses)) {
+      console.error('❌ 返回的不是数组:', typeof courses)
+      throw new Error('课程数据格式不正确')
+    }
     
     // 处理课程数据
-    const processedCourses = courses.map(course => ({
-      id: course.id,
-      title: course.title,
-      description: course.description,
-      category: course.category,  // 重要：包含分类字段
-      duration: `${course.total_lessons}课时`,
-      price: course.is_free ? 0 : course.price,
-      image: course.image_url || PLACEHOLDER_IMAGES.course,
-      instructor: course.instructor,
-      total_lessons: course.total_lessons,
-      is_free: course.is_free
-    }))
+    const processedCourses = courses.map((course, index) => {
+      console.log(`🔄 处理第${index + 1}门课程:`, course.title)
+      return {
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        category: course.category,
+        duration: `${course.total_lessons}课时`,
+        price: course.is_free ? 0 : course.price,
+        image: course.image_url || PLACEHOLDER_IMAGES.course,
+        instructor: course.instructor,
+        total_lessons: course.total_lessons,
+        is_free: course.is_free
+      }
+    })
     
     allCourses.value = processedCourses
+    console.log('🎉 课程数据加载完成！总数:', processedCourses.length)
+    
+    // 显示成功消息
+    if (processedCourses.length > 0) {
+      ElMessage.success(`成功加载 ${processedCourses.length} 门课程`)
+    }
     
   } catch (error) {
-    console.error('获取课程失败:', error)
-    ElMessage.error('获取课程失败，请稍后重试')
+    console.error('💥 获取课程失败:', error)
+    console.error('📋 错误详情:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
+    
+    // 显示用户友好的错误消息
+    ElMessage.error(`课程加载失败: ${error.message}`)
+    
+    // 设置空数组避免页面崩溃
+    allCourses.value = []
+    
   } finally {
     loading.value = false
+    console.log('⏹️ 课程加载流程结束')
   }
 }
 

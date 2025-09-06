@@ -109,17 +109,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { useUserStore } from '../stores/user'
+import { authFetch, checkAuth } from '../utils/auth'
 import PageContainer from '../components/PageContainer.vue'
 import SimpleVideoPlayer from '../components/SimpleVideoPlayer.vue'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 
 // 响应式数据
 const courseId = ref(parseInt(route.params.id as string))
-const userId = ref('user_123') // 这里应该从用户状态获取
+const userId = computed(() => userStore.getUserIdString() || 'guest')
+const realUserId = computed(() => userStore.getUserId())
 const course = ref<any>(null)
 const lessons = ref<any[]>([])
 const selectedLesson = ref<any>(null)
@@ -132,14 +137,14 @@ const loadCourseInfo = async () => {
   try {
     // 并行加载课程信息、课时列表和用户报名状态
     const [courseRes, lessonsRes, enrollmentRes] = await Promise.all([
-      fetch(`/api/courses/${courseId.value}`),
-      fetch(`/api/courses/${courseId.value}/lessons`),
-      fetch(`/api/courses/${courseId.value}/enrollment/${userId.value}`)
+      authFetch(`/api/courses/${courseId.value}`, {}, false),
+      authFetch(`/api/courses/${courseId.value}/lessons`, {}, false),
+      authFetch(`/api/courses/${courseId.value}/enrollment/${userId.value}`, {}, false)
     ])
     
-    course.value = await courseRes.json()
-    lessons.value = await lessonsRes.json()
-    enrollment.value = await enrollmentRes.json()
+    if (courseRes.ok) course.value = await courseRes.json()
+    if (lessonsRes.ok) lessons.value = await lessonsRes.json()
+    if (enrollmentRes.ok) enrollment.value = await enrollmentRes.json()
     
     // 如果已经报名，选择上次观看的课程或第一课
     if (enrollment.value?.enrolled) {
@@ -151,7 +156,7 @@ const loadCourseInfo = async () => {
     
   } catch (error) {
     console.error('加载课程信息失败:', error)
-    ElMessage.error('课程加载失败')
+    ElMessage.error('课程加载失败，请刷新页面重试')
   } finally {
     loading.value = false
   }
@@ -161,35 +166,36 @@ const loadCourseInfo = async () => {
 const enrollCourse = async () => {
   if (enrolling.value) return
   
+  // 检查用户是否登录
+  if (!checkAuth()) {
+    return
+  }
+  
   enrolling.value = true
   try {
-    const response = await fetch(`/api/courses/${courseId.value}/enroll`, {
+    const response = await authFetch(`/api/courses/${courseId.value}/enroll`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({
-        user_id: parseInt(userId.value.replace('user_', ''))
+        user_id: realUserId.value
       })
     })
     
     if (response.ok) {
-      ElMessage.success('报名成功！')
+      ElMessage.success('报名成功！开始学习吧')
       // 重新加载报名状态
-      const enrollmentRes = await fetch(`/api/courses/${courseId.value}/enrollment/${userId.value}`)
-      enrollment.value = await enrollmentRes.json()
+      const enrollmentRes = await authFetch(`/api/courses/${courseId.value}/enrollment/${userId.value}`, {}, false)
+      if (enrollmentRes.ok) {
+        enrollment.value = await enrollmentRes.json()
+      }
       
       // 选择第一课开始学习
       if (lessons.value.length > 0) {
         selectedLesson.value = lessons.value[0]
       }
-    } else {
-      const error = await response.json()
-      ElMessage.error(error.detail || '报名失败')
     }
   } catch (error) {
     console.error('报名失败:', error)
-    ElMessage.error('报名失败')
+    // authFetch已处理错误提示，这里不需要重复提示
   } finally {
     enrolling.value = false
   }

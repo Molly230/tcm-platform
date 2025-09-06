@@ -1,0 +1,23 @@
+{
+  "answers": [
+    {"question_id": 1, "selected_options": ["A"]},
+    {"question_id": 2, "selected_options": ["A"]},
+    {"question_id": 3, "selected_options": ["A"]},
+    {"question_id": 4, "selected_options": ["A"]},
+    {"question_id": 5, "selected_options": ["A"]},
+    {"question_id": 6, "selected_options": ["A"]},
+    {"question_id": 7, "selected_options": ["A"]},
+    {"question_id": 8, "selected_options": ["A"]},
+    {"question_id": 9, "selected_options": ["A"]},
+    {"question_id": 10, "selected_options": ["是"]},
+    {"question_id": 11, "selected_options": ["A"]},
+    {"question_id": 12, "selected_options": ["是"]},
+    {"question_id": 13, "selected_options": ["A"]},
+    {"question_id": 14, "selected_options": ["是"]},
+    {"question_id": 15, "selected_options": ["A"]},
+    {"question_id": 16, "selected_options": ["是"]},
+    {"question_id": 17, "selected_options": ["A"]},
+    {"question_id": 18, "selected_options": ["是"]},
+    {"question_id": 19, "selected_options": ["A", "B"]}
+  ]
+}

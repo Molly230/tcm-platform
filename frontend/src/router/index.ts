@@ -194,62 +194,38 @@ const router = createRouter({
   ]
 })
 
-// 路由守卫
+// 路由守卫 - 使用统一权限验证
+import { useUserStore } from '../stores/user'
+
 router.beforeEach((to, from, next) => {
+  const userStore = useUserStore()
+  
   // 优先检查管理员权限
   if (to.meta.requiresAdmin) {
-    const token = localStorage.getItem('admin_token')
-    const userData = localStorage.getItem('admin_user')
-    
-    if (!token || !userData) {
-      // 未登录，跳转到管理员登录页
+    if (!userStore.isLoggedIn) {
       next('/admin/login')
       return
     }
     
-    try {
-      const user = JSON.parse(userData)
-      if (!user.is_admin && !user.is_super_admin) {
-        // 不是管理员，跳转到管理员登录页
-        next('/admin/login')
-        return
-      }
-    } catch (error) {
-      // 用户数据解析失败，跳转到管理员登录页
+    if (!userStore.isAdmin()) {
       next('/admin/login')
       return
     }
     
-    // 管理员权限验证通过，继续
     next()
     return
   }
   
   // 检查是否需要用户认证
   if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('user_token')
-    const userData = localStorage.getItem('user_data')
-    
-    if (!token || !userData) {
-      // 未登录，跳转到登录页
+    if (!userStore.isLoggedIn) {
       next('/login')
       return
     }
     
-    try {
-      const user = JSON.parse(userData)
-      // 可以在这里添加更多的用户状态检查
-      if (!user.is_active || user.status === 'banned') {
-        // 账户被禁用，清除本地数据并跳转到登录页
-        localStorage.removeItem('user_token')
-        localStorage.removeItem('user_data')
-        next('/login')
-        return
-      }
-    } catch (error) {
-      // 用户数据解析失败，跳转到登录页
-      localStorage.removeItem('user_token')
-      localStorage.removeItem('user_data')
+    // 检查用户状态
+    if (userStore.user && (!userStore.user.is_active || userStore.user.status === 'banned')) {
+      userStore.clearUser()
       next('/login')
       return
     }
