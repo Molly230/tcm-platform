@@ -104,6 +104,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import PageContainer from '../components/PageContainer.vue'
+import { PLACEHOLDER_IMAGES } from '@/utils/placeholder'
 
 // 定义响应式数据
 const selectedService = ref('')
@@ -123,7 +124,7 @@ const experts = ref([
     name: '张医师',
     title: '主任医师',
     category: '中医内科',
-    avatar: 'https://via.placeholder.com/100x100?text=张医师',
+    avatar: PLACEHOLDER_IMAGES.expert,
     description: '从事中医内科临床工作20年，擅长治疗消化系统疾病和呼吸系统疾病。',
     rating: 98,
     consultations: 1200,
@@ -136,7 +137,7 @@ const experts = ref([
     name: '李医师',
     title: '副主任医师',
     category: '中医妇科',
-    avatar: 'https://via.placeholder.com/100x100?text=李医师',
+    avatar: PLACEHOLDER_IMAGES.expert,
     description: '专注于妇科疾病治疗15年，对月经不调、不孕不育等有丰富经验。',
     rating: 96,
     consultations: 800,
@@ -149,7 +150,7 @@ const experts = ref([
     name: '王医师',
     title: '主治医师',
     category: '针灸推拿',
-    avatar: 'https://via.placeholder.com/100x100?text=王医师',
+    avatar: PLACEHOLDER_IMAGES.expert,
     description: '针灸推拿科专家，擅长治疗颈椎病、腰椎间盘突出等骨科疾病。',
     rating: 97,
     consultations: 1500,
@@ -162,7 +163,7 @@ const experts = ref([
     name: '陈医师',
     title: '主任医师',
     category: '中医养生',
-    avatar: 'https://via.placeholder.com/100x100?text=陈医师',
+    avatar: PLACEHOLDER_IMAGES.expert,
     description: '中医养生专家，专注于亚健康调理和慢性病预防。',
     rating: 99,
     consultations: 2000,
