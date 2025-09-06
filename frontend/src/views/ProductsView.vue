@@ -155,6 +155,7 @@ import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import PageContainer from '../components/PageContainer.vue'
+import { PLACEHOLDER_IMAGES } from '@/utils/placeholder'
 
 const router = useRouter()
 
@@ -245,7 +246,7 @@ const getProductImage = (product: any) => {
     return product.images[0]
   }
   // 默认占位图
-  return `https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=${encodeURIComponent(product.name)}`
+  return PLACEHOLDER_IMAGES.product
 }
 
 // 事件处理

@@ -159,6 +159,7 @@ import { useRouter } from 'vue-router'
 import { User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import PageContainer from '../components/PageContainer.vue'
+import { PLACEHOLDER_IMAGES } from '@/utils/placeholder'
 
 const router = useRouter()
 
@@ -207,7 +208,7 @@ const fetchCourses = async () => {
       category: course.category,  // 重要：包含分类字段
       duration: `${course.total_lessons}课时`,
       price: course.is_free ? 0 : course.price,
-      image: course.image_url || `https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=${encodeURIComponent(course.title)}`,
+      image: course.image_url || PLACEHOLDER_IMAGES.course,
       instructor: course.instructor,
       total_lessons: course.total_lessons,
       is_free: course.is_free

@@ -42,7 +42,7 @@
               class="product-item"
             >
               <el-image 
-                :src="item.product_image || 'https://via.placeholder.com/60x60'" 
+                :src="item.product_image || PLACEHOLDER_IMAGES.product" 
                 class="product-image"
               />
               <div class="product-info">
@@ -158,6 +158,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { PLACEHOLDER_IMAGES } from '@/utils/placeholder'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
@@ -288,7 +289,7 @@ const loadOrderInfo = async () => {
           id: 1,
           product_id: 1,
           product_name: '灵芝孢子粉胶囊',
-          product_image: 'https://via.placeholder.com/60x60/9370DB/FFFFFF?text=灵芝',
+          product_image: PLACEHOLDER_IMAGES.product,
           quantity: 2,
           unit_price: 149.90,
           total_price: 299.80
