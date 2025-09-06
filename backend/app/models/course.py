@@ -1,7 +1,7 @@
 """
 课程模型
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, Enum, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -29,7 +29,7 @@ class Course(Base):
     description = Column(Text)
     category = Column(Enum(CourseCategory), nullable=False)
     duration = Column(String)  # 例如: "10课时"
-    price = Column(Float)
+    price = Column(Numeric(8, 2))
     image_url = Column(String)
     is_free = Column(Boolean, default=False)
     is_published = Column(Boolean, default=False)

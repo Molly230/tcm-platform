@@ -105,6 +105,7 @@
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '../stores/user'
 import type { FormInstance, FormRules } from 'element-plus'
 
 interface LoginForm {
@@ -117,6 +118,7 @@ interface LoginForm {
 }
 
 const router = useRouter()
+const userStore = useUserStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const isLoginMode = ref(true)
@@ -190,9 +192,8 @@ const handleLogin = async () => {
       throw new Error(data.detail || '登录失败')
     }
 
-    // 保存用户信息和token
-    localStorage.setItem('user_token', data.access_token)
-    localStorage.setItem('user_data', JSON.stringify(data.user))
+    // 使用用户状态管理保存用户信息
+    userStore.setUser(data.user, data.access_token)
 
     ElMessage.success('登录成功')
     

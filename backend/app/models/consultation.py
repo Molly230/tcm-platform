@@ -1,7 +1,7 @@
 """
 健康咨询模型
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, Enum, Boolean, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, Enum, Boolean, JSON, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -68,7 +68,7 @@ class Consultation(Base):
     video_call_id = Column(String)  # 视频通话ID
     
     # 支付信息
-    price = Column(Float)  # 咨询费用
+    price = Column(Numeric(8, 2))  # 咨询费用
     payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
     payment_id = Column(String)  # 支付订单号
     paid_at = Column(DateTime(timezone=True))  # 支付时间

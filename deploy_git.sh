@@ -3,9 +3,9 @@
 
 # 服务器配置
 SERVER_USER="root"
-SERVER_HOST="your-server-ip"
+SERVER_HOST="47.97.0.35"
 PROJECT_PATH="/var/www/tcm-platform"
-REPO_URL="https://github.com/yourusername/tcm-platform.git"
+REPO_URL="https://github.com/Molly230/tcm-platform.git"
 
 echo "中医健康平台 - Git自动部署"
 

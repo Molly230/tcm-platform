@@ -1,7 +1,7 @@
 """
 商品相关模型
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, Enum, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, Enum, ForeignKey, JSON, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -35,9 +35,9 @@ class Product(Base):
     category = Column(Enum(ProductCategory), nullable=False)
     
     # 价格信息
-    price = Column(Float, nullable=False)  # 现价
-    original_price = Column(Float)  # 原价
-    discount = Column(Float, default=1.0)  # 折扣 (0.8 = 8折)
+    price = Column(Numeric(10, 2), nullable=False)  # 现价
+    original_price = Column(Numeric(10, 2))  # 原价
+    discount = Column(Numeric(3, 2), default=1.0)  # 折扣 (0.8 = 8折)
     
     # 库存信息
     stock_quantity = Column(Integer, default=0)  # 库存数量
@@ -121,10 +121,10 @@ class Order(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     # 金额信息
-    subtotal = Column(Float, nullable=False)  # 商品总额
-    shipping_fee = Column(Float, default=0.0)  # 运费
-    discount_amount = Column(Float, default=0.0)  # 优惠金额
-    total_amount = Column(Float, nullable=False)  # 实付金额
+    subtotal = Column(Numeric(10, 2), nullable=False)  # 商品总额
+    shipping_fee = Column(Numeric(8, 2), default=0.0)  # 运费
+    discount_amount = Column(Numeric(10, 2), default=0.0)  # 优惠金额
+    total_amount = Column(Numeric(10, 2), nullable=False)  # 实付金额
     
     # 订单状态
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING_PAYMENT)
@@ -169,8 +169,8 @@ class OrderItem(Base):
     
     # 数量和价格
     quantity = Column(Integer, nullable=False)
-    unit_price = Column(Float, nullable=False)  # 单价
-    total_price = Column(Float, nullable=False)  # 小计
+    unit_price = Column(Numeric(10, 2), nullable=False)  # 单价
+    total_price = Column(Numeric(10, 2), nullable=False)  # 小计
 
     # 关系
     order = relationship("Order", back_populates="order_items")
@@ -182,7 +182,7 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
     payment_method = Column(String, nullable=False)
-    amount = Column(Float, nullable=False)
+    amount = Column(Numeric(10, 2), nullable=False)
     status = Column(String, default="pending")  # pending, success, failed
     transaction_id = Column(String)  # 第三方支付交易号
     
