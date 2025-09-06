@@ -33,7 +33,7 @@ if [ -d "/var/www/tcm-platform" ]; then
     git pull origin main
 else
     cd /var/www
-    git clone https://github.com/yourusername/tcm-platform.git
+    git clone https://github.com/Molly230/tcm-platform.git
     cd tcm-platform
 fi
 
