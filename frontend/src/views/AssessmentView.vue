@@ -92,7 +92,9 @@
                 {{ currentQuestionData.number }}
               </div>
               <h3 class="question-title">{{ currentQuestionData.title }}</h3>
-              <p class="question-description" v-if="currentQuestionData.description">
+              <p class="question-description" 
+                 :class="{ 'multi-select': currentQuestionData.type === '多选' }" 
+                 v-if="currentQuestionData.description">
                 {{ currentQuestionData.description }}
               </p>
             </div>
@@ -104,10 +106,10 @@
                 v-model="currentAnswer" 
                 class="option-group"
                 :style="{ 
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${currentQuestionData.layout?.options_per_row || 3}, 1fr)`,
-                  gap: '15px',
-                  justifyItems: currentQuestionData.layout?.option_alignment || 'start'
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                  width: '100%'
                 }"
                 @change="handleAnswerChange"
               >
@@ -118,7 +120,7 @@
                   class="option-item"
                 >
                   <div class="option-content">
-                    <div class="option-text">{{ option.display || option.text }}</div>
+                    <div class="option-text">{{ option.text }}</div>
                     <div class="option-description" v-if="option.description">
                       {{ option.description }}
                     </div>
@@ -148,7 +150,7 @@
                   class="option-item yes-no-item"
                 >
                   <div class="option-content">
-                    <div class="option-text">{{ option.display || option.text }}</div>
+                    <div class="option-text">{{ option.text }}</div>
                   </div>
                 </el-radio>
               </el-radio-group>
@@ -159,10 +161,10 @@
                 v-model="currentAnswerArray"
                 class="option-group"
                 :style="{ 
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${currentQuestionData.layout?.options_per_row || 3}, 1fr)`,
-                  gap: '15px',
-                  justifyItems: currentQuestionData.layout?.option_alignment || 'start'
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                  width: '100%'
                 }"
                 @change="handleMultiAnswerChange"
               >
@@ -173,7 +175,7 @@
                   class="option-item"
                 >
                   <div class="option-content">
-                    <div class="option-text">{{ option.display || option.text }}</div>
+                    <div class="option-text">{{ option.text }}</div>
                   </div>
                 </el-checkbox>
               </el-checkbox-group>
@@ -219,8 +221,8 @@
                   <span class="syndrome-name">{{ diagnosisResult.syndrome_type }}</span>
                 </div>
                 <div class="confidence-result">
-                  <span class="label">🔸 置信度：</span>
-                  <span class="confidence-value">{{ (diagnosisResult.confidence * 100).toFixed(0) }}%</span>
+                  <span class="label">🔸 得分：</span>
+                  <span class="confidence-value">{{ (diagnosisResult.confidence * 100).toFixed(0) }}</span>
                 </div>
               </div>
 
@@ -277,11 +279,17 @@
               </div>
             </div>
 
-            <!-- 温馨提示 -->
+            <!-- 重要免责声明 -->
             <div class="disclaimer">
               <div class="disclaimer-content">
-                <span class="disclaimer-icon">💊</span>
-                <p><strong>温馨提示：</strong>本系统仅供参考，不能替代专业医生诊断。如有严重症状请及时就医。</p>
+                <span class="disclaimer-icon">⚠️</span>
+                <p><strong>重要声明：</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                  <li>本系统仅供健康参考，不能替代专业医生诊断和治疗</li>
+                  <li>任何药物使用必须在专业中医师指导下进行</li>
+                  <li>如有严重或持续症状，请立即就医</li>
+                  <li>不得将本报告作为自行用药或停药的依据</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -316,7 +324,8 @@ const selectedDisease = ref('')
 const diseases = ref([
   { code: 'insomnia', name: '失眠', status: 'active' },
   { code: 'stomach', name: '胃病', status: 'coming_soon' },
-  { code: 'aging', name: '早衰', status: 'coming_soon' }
+  { code: 'aging', name: '早衰', status: 'coming_soon' },
+  { code: 'consultation', name: '专家咨询', status: 'active' }
 ])
 
 // 题目相关
@@ -339,6 +348,35 @@ const currentQuestionData = computed(() => {
   return questions.value[currentQuestion.value] || {}
 })
 
+// 检查题目是否应该显示
+const shouldShowQuestion = (questionId: number) => {
+  // 第9题的条件显示逻辑：只有第8题选择了药物才显示
+  if (questionId === 9 && selectedDisease.value === 'insomnia') {
+    const question8Answer = answers.value.find(a => a.question_id === 8)
+    if (question8Answer && question8Answer.selected_options && question8Answer.selected_options.length > 0) {
+      const options = question8Answer.selected_options
+      
+      // 如果只选择了"无"（F选项）-> 不显示第9题
+      if (options.length === 1 && (options.includes('F') || options.includes('无'))) {
+        return false
+      }
+      
+      // 如果选择了药物（A-E选项中的任意一个，可能还包含F）-> 显示第9题
+      const hasMedicine = options.some(opt => 
+        ['A', 'B', 'C', 'D', 'E'].includes(opt) ||
+        ['苯二氮䓬类：地西泮、劳拉西泮', '非苯二氮䓬类：唑吡坦、右佐匹克隆', 
+         '褪黑素受体激动剂：雷美替胺', '食欲素受体拮抗剂：苏沃雷生', 
+         '抗抑郁药物：曲唑酮、米氮平'].includes(opt)
+      )
+      
+      return hasMedicine
+    }
+    // 第8题还没回答，不显示第9题
+    return false
+  }
+  return true
+}
+
 const hasAnswer = computed(() => {
   const currentQ = questions.value[currentQuestion.value]
   if (!currentQ) return false
@@ -359,7 +397,8 @@ const getIconClass = (diseaseCode: string) => {
   const iconMap = {
     insomnia: '🌙',
     stomach: '🫃', 
-    aging: '⏰'
+    aging: '⏰',
+    consultation: '👨‍⚕️'
   }
   return iconMap[diseaseCode] || '📋'
 }
@@ -367,6 +406,12 @@ const getIconClass = (diseaseCode: string) => {
 const selectDisease = async (disease: any) => {
   if (disease.status !== 'active') {
     ElMessage.warning('该功能暂未开放，敬请期待')
+    return
+  }
+  
+  // 如果选择专家咨询，显示选择页面而不是直接开始
+  if (disease.code === 'consultation') {
+    selectedDisease.value = disease.code
     return
   }
   
@@ -395,7 +440,8 @@ const getDiseaseName = (code: string) => {
   const diseaseMap = {
     insomnia: '失眠',
     stomach: '胃病',
-    aging: '早衰'
+    aging: '早衰',
+    consultation: '专家咨询'
   }
   return diseaseMap[code] || ''
 }
@@ -404,7 +450,8 @@ const getDiseaseDescription = (code: string) => {
   const descMap = {
     insomnia: '基于中医理论的失眠专业测评，通过19项专业问诊，运用二元测评算法，为您提供个性化的失眠治疗方案',
     stomach: '胃病专业测评（开发中）',
-    aging: '早衰专业测评（开发中）'
+    aging: '早衰专业测评（开发中）',
+    consultation: '与资深中医师一对一在线咨询，获得专业的健康指导和治疗建议'
   }
   return descMap[code] || ''
 }
@@ -421,6 +468,11 @@ const getCurrentDiseaseFeatures = () => {
     ],
     aging: [
       { icon: '🎯', title: '早衰测评', description: '专业早衰测评（开发中）' }
+    ],
+    consultation: [
+      { icon: '👨‍⚕️', title: '专家咨询', description: '资深中医师一对一咨询' },
+      { icon: '💬', title: '在线交流', description: '文字、语音、视频多种方式' },
+      { icon: '📋', title: '个性方案', description: '针对性治疗建议和调理方案' }
     ]
   }
   return featureMap[selectedDisease.value] || []
@@ -448,7 +500,7 @@ const loadInsomniaQuestions = async () => {
         id: q.id,
         title: q.text,
         number: q.number || `第${q.id}题`,
-        description: q.type === 'multiple' ? '可多选，可以多选和不选' : (q.hint || ''),
+        description: q.type === 'multiple' ? '可以多选和不选' : (q.hint || ''),
         category: q.category,
         type: q.type === 'single' ? '单选' : (q.type === 'multiple' ? '多选' : (q.type === 'yes_no' ? '是非' : '单选')),
         css_class: q.css_class,
@@ -645,7 +697,7 @@ const loadInsomniaQuestions = async () => {
       {
         id: 14,
         title: "您近期有无如下问题？",
-        description: "可多选，可以多选和不选",
+        description: "可以多选和不选",
         category: "认知功能",
         type: "多选",
         options: [
@@ -657,7 +709,7 @@ const loadInsomniaQuestions = async () => {
       {
         id: 15,
         title: "您有怎样的睡眠困扰？",
-        description: "可多选，可以多选和不选",
+        description: "可以多选和不选",
         category: "睡眠困扰",
         type: "多选",
         options: [
@@ -670,7 +722,7 @@ const loadInsomniaQuestions = async () => {
       {
         id: 16,
         title: "您是否服用过以下类药物？",
-        description: "可多选，可以多选和不选",
+        description: "可以多选和不选",
         category: "用药史",
         type: "多选",
         options: [
@@ -745,7 +797,7 @@ const loadStomachQuestions = async () => {
       questions.value = data.questions.map(q => ({
         id: q.id,
         title: q.text,
-        description: q.type === '多选' ? '可多选，可以多选和不选' : '',
+        description: q.type === '多选' ? '可以多选和不选' : '',
         category: q.category,
         type: q.type,
         options: q.options.map(opt => ({
@@ -786,7 +838,7 @@ const loadAgingQuestions = async () => {
       questions.value = data.questions.map(q => ({
         id: q.id,
         title: q.text,
-        description: q.type === '多选' ? '可多选，可以多选和不选' : '',
+        description: q.type === '多选' ? '可以多选和不选' : '',
         category: q.category,
         type: q.type,
         options: q.options.map(opt => ({
@@ -854,36 +906,126 @@ const nextQuestion = async () => {
   // 检查是否有答案
   if (!hasAnswer.value) return
   
+  // 特殊流程检查 - 失眠诊断
+  if (selectedDisease.value === 'insomnia') {
+    const currentQ = questions.value[currentQuestion.value]
+    const currentAnswers = answers.value[currentQuestion.value]
+    
+    // 第1题特殊处理：选择"好"（value="A"）直接完成测评
+    if (currentQ.id === 1 && (currentAnswers.selected_options[0] === 'A' || currentAnswers.selected_options[0] === '好')) {
+      // 显示祝福信息并直接完成
+      diagnosisResult.value = {
+        message: "恭喜您！您的睡眠质量很好，请继续保持良好的作息习惯。祝您身体健康！",
+        syndrome_type: "无需治疗",
+        confidence: 1.0,
+        analysis: "您的睡眠状况良好，无需特殊治疗。",
+        treatment_plan: {
+          herbal_medicine: "无需用药，保持现有良好习惯即可",
+          external_treatment: "无需外治，维持规律作息",
+          diet_therapy: "保持均衡饮食，避免睡前过饱或饥饿",
+          lifestyle: "继续保持良好的睡眠习惯和作息规律"
+        },
+        is_special_exit: true,
+        special_type: "good_sleep"
+      }
+      isCompleted.value = true
+      ElMessage.success('测评完成！您的睡眠质量很好！')
+      return
+    }
+    
+    // 第9题特殊处理：选择"3个月以上"（value="C"）推荐专业咨询
+    if (currentQ.id === 9 && (currentAnswers.selected_options[0] === 'C' || currentAnswers.selected_options[0] === '3个月以上' || currentAnswers.selected_options[0] === '长期使用')) {
+      // 显示专业咨询建议
+      diagnosisResult.value = {
+        message: "您长期使用安眠药物，建议寻求高级咨询师的专业指导，制定个性化的减药和治疗方案。",
+        syndrome_type: "长期用药失眠",
+        confidence: 1.0,
+        analysis: "长期使用安眠药物需要专业医师指导逐步调整。",
+        treatment_plan: {
+          herbal_medicine: "需要专业中医师评估后制定个性化中药方案",
+          external_treatment: "建议配合专业针灸理疗逐步减药",
+          diet_therapy: "配合食疗调养，辅助改善睡眠质量",
+          lifestyle: "在专业指导下调整作息，配合心理疏导"
+        },
+        is_special_exit: true,
+        special_type: "long_term_medication",
+        recommendation: {
+          type: "professional_consultation",
+          message: "建议预约高级咨询师制定减药方案"
+        }
+      }
+      isCompleted.value = true
+      ElMessage.warning('建议寻求专业咨询师指导')
+      return
+    }
+  }
+  
   if (currentQuestion.value === totalQuestions.value - 1) {
     // 最后一题，提交测评
     await submitAssessment()
   } else {
-    // 下一题
-    currentQuestion.value++
-    loadCurrentAnswers()
+    // 寻找下一个应该显示的题目
+    let nextQuestionIndex = currentQuestion.value + 1
+    
+    // 跳过不应该显示的题目
+    while (nextQuestionIndex < totalQuestions.value) {
+      const nextQuestion = questions.value[nextQuestionIndex]
+      if (nextQuestion && shouldShowQuestion(nextQuestion.id)) {
+        break
+      }
+      nextQuestionIndex++
+    }
+    
+    // 移动到下一题（可能跳过了某题）
+    if (nextQuestionIndex < totalQuestions.value) {
+      currentQuestion.value = nextQuestionIndex
+      loadCurrentAnswers()
+    } else {
+      // 已经是最后一题，提交测评
+      await submitAssessment()
+    }
   }
 }
 
 const previousQuestion = () => {
   if (currentQuestion.value > 0) {
-    currentQuestion.value--
-    loadCurrentAnswers()
+    // 寻找上一个应该显示的题目
+    let prevQuestionIndex = currentQuestion.value - 1
+    
+    // 跳过不应该显示的题目
+    while (prevQuestionIndex >= 0) {
+      const prevQuestion = questions.value[prevQuestionIndex]
+      if (prevQuestion && shouldShowQuestion(prevQuestion.id)) {
+        break
+      }
+      prevQuestionIndex--
+    }
+    
+    // 移动到上一题
+    if (prevQuestionIndex >= 0) {
+      currentQuestion.value = prevQuestionIndex
+      loadCurrentAnswers()
+    }
   }
 }
 
 const loadCurrentAnswers = () => {
-  const currentAnswers = answers.value[currentQuestion.value]
-  const currentQ = questions.value[currentQuestion.value]
+  // 清空当前答案
+  currentAnswer.value = ''
+  currentAnswerArray.value = []
   
-  if (currentAnswers && currentQ) {
-    if (currentQ.type === '单选') {
-      currentAnswer.value = currentAnswers.selected_options[0] || ''
-    } else if (currentQ.type === '多选') {
-      currentAnswerArray.value = currentAnswers.selected_options || []
+  // 只有在答案数组存在且有对应题目时才加载
+  if (answers.value[currentQuestion.value] && questions.value[currentQuestion.value]) {
+    const currentAnswers = answers.value[currentQuestion.value]
+    const currentQ = questions.value[currentQuestion.value]
+    
+    if (currentAnswers.selected_options && currentAnswers.selected_options.length > 0) {
+      if (currentQ.type === '单选' || currentQ.type === '是非') {
+        currentAnswer.value = currentAnswers.selected_options[0]
+      } else if (currentQ.type === '多选') {
+        currentAnswerArray.value = [...currentAnswers.selected_options]
+      }
     }
-  } else {
-    currentAnswer.value = ''
-    currentAnswerArray.value = []
   }
 }
 
@@ -893,84 +1035,109 @@ const submitAssessment = async () => {
   try {
     let response
     if (selectedDisease.value === 'insomnia') {
-      // 调用失眠诊断API
+      // 构建要发送的答案数据，过滤掉跳过的题目
+      const validAnswers = answers.value.filter(answer => 
+        answer.selected_options && answer.selected_options.length > 0
+      )
+      
+      const requestData = {
+        answers: validAnswers
+      }
+      
       response = await fetch('/api/diagnosis/insomnia/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(answers.value)
+        body: JSON.stringify(requestData)
       })
-    } else if (selectedDisease.value === 'stomach') {
-      // 调用胃病诊断API
-      response = await fetch('/api/diagnosis/stomach/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(answers.value)
-      })
-    } else if (selectedDisease.value === 'aging') {
-      // 调用早衰诊断API
-      response = await fetch('/api/diagnosis/aging/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(answers.value)
-      })
-    }
-    
-    if (response) {
-      const data = await response.json()
       
-      // 处理588格式的诊断结果
-      if (data.success && data.data) {
-        // 转换588格式到前端显示格式
-        diagnosisResult.value = {
-          message: "诊断完成",
-          syndrome_type: data.data.diagnosis_result.final_syndrome,
-          confidence: data.data.diagnosis_result.confidence_score,
-          analysis: data.data.diagnosis_result.analysis,
-          treatment_plan: {
-            herbal_medicine: "推荐使用养血安神丸或甘麦大枣汤等方剂，具体用药请咨询专业中医师。",
-            external_treatment: "可尝试头部按摩、足底按摩等方法，有助于改善睡眠质量。",
-            diet_therapy: "建议多食用红枣、桂圆、枸杞等养血食材，避免辛辣刺激性食物。",
-            lifestyle: "保持规律作息，睡前避免使用电子设备，适量运动但不宜过激烈。"
-          },
-          diagnosis_result: data.data.diagnosis_result,
-          timestamp: data.data.timestamp
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data) {
+          const diagnosisData = data.data.diagnosis_result
+          
+          // 检查后端返回的特殊流程标记
+          if (diagnosisData.special_flow) {
+            if (diagnosisData.special_flow === 'good_sleep') {
+              // 第1题"好"的特殊处理
+              diagnosisResult.value = {
+                message: "恭喜您！您的睡眠质量很好，请继续保持良好的作息习惯。祝您身体健康！",
+                syndrome_type: "无需治疗",
+                confidence: 1.0,
+                analysis: "您的睡眠状况良好，无需特殊治疗。",
+                treatment_plan: {
+                  herbal_medicine: "无需用药，保持现有良好习惯即可",
+                  external_treatment: "无需外治，维持规律作息",
+                  diet_therapy: "保持均衡饮食，避免睡前过饱或饥饿",
+                  lifestyle: "继续保持良好的睡眠习惯和作息规律"
+                },
+                is_special_exit: true,
+                special_type: "good_sleep"
+              }
+              ElMessage.success('测评完成！您的睡眠质量很好！')
+            } else if (diagnosisData.special_flow === 'long_term_medication') {
+              // 第9题"3个月以上"的特殊处理
+              diagnosisResult.value = {
+                message: "您长期使用安眠药物，建议寻求高级咨询师的专业指导，制定个性化的减药和治疗方案。",
+                syndrome_type: "长期用药失眠",
+                confidence: 1.0,
+                analysis: "长期使用安眠药物需要专业医师指导逐步调整。",
+                treatment_plan: {
+                  herbal_medicine: "需要专业中医师评估后制定个性化中药方案",
+                  external_treatment: "建议配合专业针灸理疗逐步减药",
+                  diet_therapy: "配合食疗调养，辅助改善睡眠质量",
+                  lifestyle: "在专业指导下调整作息，配合心理疏导"
+                },
+                is_special_exit: true,
+                special_type: "long_term_medication",
+                recommendation: {
+                  type: "professional_consultation",
+                  message: "建议预约高级咨询师制定减药方案"
+                }
+              }
+              ElMessage.warning('建议寻求专业咨询师指导')
+            }
+          } else {
+            // 正常诊断结果处理
+            diagnosisResult.value = {
+              message: "诊断完成",
+              syndrome_type: diagnosisData.syndrome_type || diagnosisData.final_syndrome,
+              confidence: diagnosisData.confidence_score || diagnosisData.confidence,
+              analysis: diagnosisData.description || diagnosisData.analysis,
+              treatment_plan: {
+                herbal_medicine: diagnosisData.treatment_plan?.herbal_medicine || "请咨询专业中医师获得具体用药建议",
+                external_treatment: diagnosisData.treatment_plan?.external_treatment || "请咨询专业中医师获得外治法指导",
+                diet_therapy: diagnosisData.treatment_plan?.diet_therapy || "请咨询专业中医师获得食疗建议",
+                lifestyle: diagnosisData.treatment_plan?.lifestyle || "请咨询专业中医师获得生活调养建议"
+              },
+              diagnosis_result: diagnosisData,
+              timestamp: data.data.timestamp,
+              base_score: diagnosisData.base_score,
+              insomnia_level: diagnosisData.insomnia_level,
+              detailed_scores: diagnosisData.detailed_scores
+            }
+            ElMessage.success('测评完成！基于专业诊断引擎')
+          }
+          
+          // 显示结果页面
+          await new Promise(resolve => setTimeout(resolve, 500))
+          isCompleted.value = true
+          
+        } else {
+          ElMessage.error('诊断数据格式错误：' + (data.error || '未知错误'))
+          console.error('API返回错误:', data)
         }
       } else {
-        // 其他格式的结果直接使用
-        diagnosisResult.value = data
+        const errorText = await response.text()
+        console.error('HTTP错误:', response.status, errorText)
+        ElMessage.error(`诊断服务异常 (${response.status})，请稍后重试`)
       }
+    } else {
+      ElMessage.warning('该疾病类型的诊断功能尚未开放')
     }
-    
-    // 减少延时，改善用户体验
-    await new Promise(resolve => setTimeout(resolve, 500))
-    isCompleted.value = true
-    ElMessage.success('测评完成！使用588严密逻辑')
     
   } catch (error) {
-    console.error('提交诊断失败:', error)
-    // 提供588格式的备用诊断结果，确保用户能看到基于严密逻辑的结果
-    diagnosisResult.value = {
-      message: "诊断完成",
-      syndrome_type: "骨髓空虚",
-      confidence: 0.85,
-      analysis: "基于588项目二元诊断逻辑，根据您的症状分析，初步诊断为骨髓空虚证型。",
-      treatment_plan: {
-        herbal_medicine: "推荐使用养血安神丸或甘麦大枣汤等方剂，具体用药请咨询专业中医师。",
-        external_treatment: "可尝试头部按摩、足底按摩等方法，有助于改善睡眠质量。",
-        diet_therapy: "建议多食用红枣、桂圆、枸杞等养血食材，避免辛辣刺激性食物。",
-        lifestyle: "保持规律作息，睡前避免使用电子设备，适量运动但不宜过激烈。"
-      },
-      diagnosis_result: {
-        row_dimension: "骨髓",
-        column_dimension: "空虚",
-        final_syndrome: "骨髓空虚",
-        confidence_score: 0.85,
-        analysis: "基于588项目二元诊断引擎的诊断结果"
-      }
-    }
-    await new Promise(resolve => setTimeout(resolve, 500))
-    isCompleted.value = true
-    ElMessage.success('测评完成！（使用备用数据）')
+    console.error('诊断API调用失败:', error)
+    ElMessage.error('网络连接失败，请检查网络后重试')
   } finally {
     isSubmitting.value = false
   }
@@ -1178,7 +1345,7 @@ onMounted(async () => {
 
 /* 问题界面 */
 .question-section {
-  padding: 40px;
+  padding: 20px 40px;
 }
 
 .question-card {
@@ -1187,7 +1354,7 @@ onMounted(async () => {
 }
 
 .question-header {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .question-number {
@@ -1210,8 +1377,13 @@ onMounted(async () => {
   margin: 0;
 }
 
+.question-description.multi-select {
+  color: #e74c3c;
+  font-weight: 500;
+}
+
 .question-options {
-  margin-bottom: 40px;
+  margin-bottom: 25px;
 }
 
 .option-group {
@@ -1222,34 +1394,63 @@ onMounted(async () => {
 .option-item {
   width: 100%;
   margin-bottom: 0;
-  padding: 15px;
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
+  padding: 10px 15px;
+  border: none;
+  background: transparent;
   transition: all 0.3s ease;
   cursor: pointer;
-  display: flex;
-  align-items: flex-start;
+  display: flex !important;
+  align-items: flex-start !important;
   justify-self: stretch;
+  min-height: auto;
+  box-sizing: border-box;
 }
 
 .option-item:hover {
-  border-color: #667eea;
   background-color: #f8f9ff;
+  border-radius: 8px;
 }
 
 .option-item.is-checked {
-  border-color: #667eea;
   background-color: #e6f3ff;
+  border-radius: 8px;
 }
 
 .option-content {
   margin-left: 10px;
+  width: 100%;
+  flex: 1;
+}
+
+/* 强制所有选项对齐 */
+.option-group .el-radio,
+.option-group .el-checkbox {
+  width: 100% !important;
+  margin-right: 0 !important;
+  display: flex !important;
+  align-items: flex-start !important;
+}
+
+.option-group .el-radio__input,
+.option-group .el-checkbox__input {
+  margin-top: 2px !important;
+}
+
+.option-group .el-radio__label,
+.option-group .el-checkbox__label {
+  width: 100% !important;
+  flex: 1 !important;
+  padding-left: 10px !important;
+  line-height: 1.3 !important;
 }
 
 .option-text {
   font-weight: 500;
   color: #2d3436;
-  margin-bottom: 5px;
+  margin-bottom: 2px;
+  font-size: 1rem;
+  line-height: 1.3;
+  width: 100%;
 }
 
 .option-description {
@@ -1280,13 +1481,14 @@ onMounted(async () => {
 
 .question-actions {
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
+  justify-content: flex-start;
+  gap: 15px;
 }
 
 .question-actions .el-button {
-  flex: 1;
-  max-width: 150px;
+  flex: 0 0 auto;
+  min-width: 100px;
+  max-width: 120px;
 }
 
 /* 多选题规则说明 */
@@ -1368,13 +1570,15 @@ onMounted(async () => {
 }
 
 .disease-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 30px;
   margin-top: 30px;
-  max-width: 900px;
+  max-width: 1000px;
   margin-left: auto;
   margin-right: auto;
+  flex-wrap: wrap;
 }
 
 .disease-card {
@@ -1388,6 +1592,8 @@ onMounted(async () => {
   position: relative;
   overflow: hidden;
   min-height: 250px;
+  width: 200px;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1463,6 +1669,15 @@ onMounted(async () => {
   border-radius: 15px;
   font-size: 0.8rem;
   font-weight: 500;
+}
+
+.disease-description {
+  color: #636e72;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-top: 10px;
+  position: relative;
+  z-index: 1;
 }
 
 .back-button-container {
@@ -1542,6 +1757,35 @@ onMounted(async () => {
   font-size: 1.2rem;
   font-weight: 600;
   color: #27ae60;
+}
+
+.score-badge, .level-badge {
+  display: inline-block;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-left: 10px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  animation: pulse-badge 2s infinite;
+}
+
+.score-badge {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.level-badge {
+  background: linear-gradient(45deg, #f39c12, #e67e22);
+  box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+}
+
+@keyframes pulse-badge {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .analysis-section {
@@ -1895,13 +2139,16 @@ onMounted(async () => {
   }
   
   .disease-cards {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: center;
     gap: 15px;
     margin-top: 20px;
   }
   
   .disease-card {
-    padding: 30px 20px;
+    width: 100%;
+    max-width: 300px;
+    padding: 25px 20px;
   }
   
   .treatment-sections {

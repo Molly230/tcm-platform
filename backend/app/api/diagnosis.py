@@ -64,7 +64,7 @@ async def get_diseases():
 
 @router.get("/insomnia/questionnaire")
 async def get_insomnia_questionnaire():
-    """获取18题失眠问诊问卷"""
+    """获取19题失眠问诊问卷"""
     try:
         questions = questionnaire.get_questions()
         # 转换为API返回格式，添加美化信息
@@ -160,10 +160,10 @@ async def get_insomnia_questionnaire():
                 "summary": summary,
                 "questionnaire_info": {
                     "title": "失眠中医辨证问卷",
-                    "subtitle": "基于18题专业失眠评估系统",
+                    "subtitle": "基于19题专业失眠评估系统", 
                     "version": "2.0",
                     "description": "结合现代医学和传统中医理论的综合性失眠诊断问卷",
-                    "estimated_time": "5-8分钟",
+                    "estimated_time": "8-10分钟",
                     "total_questions": len(formatted_questions)
                 },
                 "layout_config": {
@@ -196,9 +196,10 @@ async def get_insomnia_questionnaire():
                 },
                 "instructions": [
                     "请根据您最近一个月的实际情况如实回答",
-                    "每道题目都有相应的提示信息帮助您理解",
-                    "前9题为基础评估，后10题为中医证型分析",
-                    "所有题目均为必填项，请认真考虑后选择"
+                    "每道题目都有相应的提示信息帮助您理解", 
+                    "前8题为基础评估（第9题不参与评分），后10题为中医证型分析",
+                    "第1题选择'好'将直接完成测评并给出祝福",
+                    "第8题选择'无'将跳过第9题，第9题选择'3个月以上'将建议专业咨询"
                 ]
             }
         }
@@ -208,7 +209,7 @@ async def get_insomnia_questionnaire():
 
 @router.api_route("/insomnia/analyze", methods=["POST"])  
 async def analyze_insomnia(request: Request):
-    """失眠诊断分析 - 使用18题问卷的精确诊断逻辑"""
+    """失眠诊断分析 - 使用19题问卷的精确诊断逻辑"""
     try:
         # 解析请求数据
         body = await request.body()
@@ -224,20 +225,44 @@ async def analyze_insomnia(request: Request):
         # 将前端答案格式转换为诊断引擎需要的格式
         answers_dict = {}
         
+        # 获取问卷数据以建立标签到值的映射
+        questions = questionnaire.get_questions()
+        label_to_value_mapping = {}
+        
+        # 为每个问题创建标签到值的映射
+        for q in questions:
+            label_to_value_mapping[q.id] = {}
+            for opt in q.options:
+                label_to_value_mapping[q.id][opt.label] = opt.value
+        
         for answer_data in data['answers']:
-            question_id = str(answer_data['question_id'])
+            question_id = int(answer_data['question_id'])
             selected_options = answer_data.get('selected_options', [])
             
+            # 转换标签为值
+            converted_options = []
+            if question_id in label_to_value_mapping:
+                for selected_label in selected_options:
+                    if selected_label in label_to_value_mapping[question_id]:
+                        converted_options.append(label_to_value_mapping[question_id][selected_label])
+                    else:
+                        # 如果找不到映射，直接使用原值（可能已经是正确格式）
+                        converted_options.append(selected_label)
+            else:
+                converted_options = selected_options
+            
+            question_id_str = str(question_id)
+            
             # 处理不同类型的问题
-            if len(selected_options) == 1:
+            if len(converted_options) == 1:
                 # 单选题或是非题
-                answers_dict[question_id] = selected_options[0]
-            elif len(selected_options) > 1:
+                answers_dict[question_id_str] = converted_options[0]
+            elif len(converted_options) > 1:
                 # 多选题
-                answers_dict[question_id] = selected_options
+                answers_dict[question_id_str] = converted_options
             else:
                 # 未选择
-                answers_dict[question_id] = []
+                answers_dict[question_id_str] = []
         
         # 使用新的失眠诊断引擎进行分析
         diagnosis_result = InsomniaDiagnosisEngine.analyze_questionnaire(answers_dict)
@@ -266,8 +291,7 @@ async def analyze_insomnia(request: Request):
                     # 治疗方案
                     'treatment_plan': diagnosis_result.treatment_plan,
                     
-                    # 诊断描述
-                    'description': f"{diagnosis_result.base_score}分{diagnosis_result.level.value}，证型：{diagnosis_result.syndrome.value}，置信度：{diagnosis_result.confidence:.1%}"
+                    # 诊断描述已移除
                 },
                 'timestamp': '2024-01-01T00:00:00Z',
                 'processed_answers': len(data['answers'])

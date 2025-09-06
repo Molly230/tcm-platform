@@ -19,14 +19,14 @@ class Question:
     required: bool = True
 
 class InsomniaQuestionnaire:
-    """18题失眠问卷"""
+    """19题失眠问卷"""
     
     @staticmethod
     def get_questions() -> List[Question]:
-        """获取完整的18题问卷"""
+        """获取完整的19题问卷"""
         
         questions = [
-            # 基础评分题（1-8题）
+            # 基础评分题（1-9题）
             Question(
                 id=1,
                 text="您认为自己的睡眠状况如何？",
@@ -117,10 +117,11 @@ class InsomniaQuestionnaire:
                 type="multiple",
                 category="基础评分",
                 options=[
-                    QuestionOption("A", "反复清醒", 9),
-                    QuestionOption("B", "整夜做梦", 4),
-                    QuestionOption("C", "晨起疲倦", 2),
-                    QuestionOption("D", "难以入眠", 0)
+                    QuestionOption("A", "反复清醒", -3),
+                    QuestionOption("B", "整夜做梦", -3),
+                    QuestionOption("C", "晨起疲倦", -3),
+                    QuestionOption("D", "难以入眠", -3),
+                    QuestionOption("E", "无", 0)
                 ]
             ),
             
@@ -130,15 +131,16 @@ class InsomniaQuestionnaire:
                 type="multiple",
                 category="基础评分",
                 options=[
-                    QuestionOption("A", "苯二氮䓬类：地西泮、劳拉西泮", 20),
-                    QuestionOption("B", "非苯二氮䓬类：唑吡坦、右佐匹克隆", 15),
-                    QuestionOption("C", "褪黑素受体激动剂：雷美替胺", 10),
-                    QuestionOption("D", "食欲素受体拮抗剂：苏沃雷生", 5),
-                    QuestionOption("E", "抗抑郁药物：曲唑酮、米氮平", 0)
+                    QuestionOption("A", "苯二氮䓬类：地西泮、劳拉西泮", -5),
+                    QuestionOption("B", "非苯二氮䓬类：唑吡坦、右佐匹克隆", -5),
+                    QuestionOption("C", "褪黑素受体激动剂：雷美替胺", -5),
+                    QuestionOption("D", "食欲素受体拮抗剂：苏沃雷生", -5),
+                    QuestionOption("E", "抗抑郁药物：曲唑酮、米氮平", -5),
+                    QuestionOption("F", "无", 0)
                 ]
             ),
             
-            # 服药时长（第9题）
+            # 服药时长（第9题）- 条件显示：仅当第8题选择了药物时显示
             Question(
                 id=9,
                 text="您服用安眠药时长周期？",
@@ -217,7 +219,8 @@ class InsomniaQuestionnaire:
                 options=[
                     QuestionOption("A", "时有耳鸣", 1),
                     QuestionOption("B", "时发痔疮，肛周瘙痒", 1),
-                    QuestionOption("C", "腹胀/腹部不适", 1)
+                    QuestionOption("C", "腹胀/腹部不适", 1),
+                    QuestionOption("D", "无", 0)
                 ]
             ),
             
@@ -229,7 +232,8 @@ class InsomniaQuestionnaire:
                 options=[
                     QuestionOption("A", "夜间憋醒/胸闷，心跳加速", 1),
                     QuestionOption("B", "皮肤瘙痒，发荨麻疹", 1),
-                    QuestionOption("C", "咳嗽/气短/喘促等", 1)
+                    QuestionOption("C", "咳嗽/气短/喘促等", 1),
+                    QuestionOption("D", "无", 0)
                 ]
             ),
             
@@ -241,7 +245,8 @@ class InsomniaQuestionnaire:
                 options=[
                     QuestionOption("A", "面色黯黑，无精打采", 1),
                     QuestionOption("B", "容易受惊，害怕", 1),
-                    QuestionOption("C", "夜间盗汗", 1)
+                    QuestionOption("C", "夜间盗汗", 1),
+                    QuestionOption("D", "无", 0)
                 ]
             ),
             
@@ -253,7 +258,8 @@ class InsomniaQuestionnaire:
                 options=[
                     QuestionOption("A", "腰酸无力", 1),
                     QuestionOption("B", "身寒怕冷", 1),
-                    QuestionOption("C", "夜尿频繁", 1)
+                    QuestionOption("C", "夜尿频繁", 1),
+                    QuestionOption("D", "无", 0)
                 ]
             ),
             
@@ -265,7 +271,8 @@ class InsomniaQuestionnaire:
                 options=[
                     QuestionOption("A", "好忘事，记忆力下降", 1),
                     QuestionOption("B", "白天嗜睡", 1),
-                    QuestionOption("C", "偏头痛/头痛", 1)
+                    QuestionOption("C", "偏头痛/头痛", 1),
+                    QuestionOption("D", "无", 0)
                 ]
             )
         ]
@@ -288,8 +295,8 @@ class InsomniaQuestionnaire:
                 "脑髓证型": "14、19题，脑力消耗相关"
             },
             "scoring_rules": {
-                "基础分数": "1-9题总分，用于确定失眠等级",
+                "基础分数": "1-8题总分，用于确定失眠等级（第9题不参与评分）",
                 "证型分数": "10-19题分别计分，用于证型矩阵匹配",
-                "等级划分": "初级(75-90分)、中级(60-74分)、高级(<60分)"
+                "等级划分": "无需治疗(≥103分)、初级失眠(60-102分)、中级失眠(45-59分)、高级失眠(≤44分)"
             }
         }
