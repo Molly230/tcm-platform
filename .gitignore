@@ -34,3 +34,17 @@ nul
 
 # Claude Code
 .claude/
+# Python缓存
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+
+# 数据库
+*.db
+*.sqlite
+backend/*.db*
+
+# 密钥
+*.pem
+*.key

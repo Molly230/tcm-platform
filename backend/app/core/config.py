@@ -26,7 +26,9 @@ class Settings(BaseSettings):
     )
     
     # JWT配置
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
+    if not SECRET_KEY:
+        raise ValueError("❌ SECRET_KEY未配置！生产环境必须在.env中设置强密钥")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
