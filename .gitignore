@@ -48,3 +48,4 @@ backend/*.db*
 # 密钥
 *.pem
 *.key
+backup/
