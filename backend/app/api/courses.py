@@ -1,12 +1,21 @@
 """
 课程相关API路由
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from app import schemas, models
 from app.database import get_db
+from app.core.exceptions import (
+    NotFoundException, 
+    BusinessException, 
+    ValidationException, 
+    FileTooLargeException, 
+    UnsupportedFileTypeException, 
+    DatabaseException, 
+    CommonErrors
+)
 
 router = APIRouter(tags=["courses"])
 
@@ -38,10 +47,7 @@ def read_course(course_id: int, db: Session = Depends(get_db)):
     """获取特定课程"""
     db_course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if db_course is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        raise CommonErrors.COURSE_NOT_FOUND
     return db_course
 
 @router.put("/{course_id}", response_model=schemas.Course)
@@ -53,10 +59,7 @@ def update_course(
     """更新课程信息"""
     db_course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if db_course is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        raise CommonErrors.COURSE_NOT_FOUND
     
     # 更新课程信息
     for field, value in course_update.dict(exclude_unset=True).items():
@@ -71,10 +74,7 @@ def get_course_lessons(course_id: int, db: Session = Depends(get_db)):
     """获取课程的所有课时"""
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        raise CommonErrors.COURSE_NOT_FOUND
     
     lessons = db.query(models.Lesson).filter(
         models.Lesson.course_id == course_id
@@ -92,10 +92,7 @@ def enroll_course(
     # 检查课程是否存在
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        raise CommonErrors.COURSE_NOT_FOUND
     
     # 检查是否已经报名
     existing_enrollment = db.query(models.Enrollment).filter(
@@ -104,10 +101,7 @@ def enroll_course(
     ).first()
     
     if existing_enrollment:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Already enrolled"
-        )
+        raise BusinessException("已经报名该课程")
     
     # 创建报名记录
     enrollment = models.Enrollment(
@@ -148,10 +142,7 @@ def delete_course(course_id: int, db: Session = Depends(get_db)):
     """删除课程"""
     db_course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if db_course is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        raise CommonErrors.COURSE_NOT_FOUND
     
     db.delete(db_course)
     db.commit()
@@ -162,10 +153,7 @@ def get_lesson(lesson_id: int, db: Session = Depends(get_db)):
     """获取单个课时详情"""
     lesson = db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first()
     if not lesson:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Lesson not found"
-        )
+        raise NotFoundException("课时")
     return lesson
 
 @router.post("/lessons/{lesson_id}/complete")

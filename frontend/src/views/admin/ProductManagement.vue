@@ -10,6 +10,9 @@
           <el-icon><Plus /></el-icon>
           新增商品
         </el-button>
+        <el-button type="success" @click="activateAllDraftProducts" :loading="activatingDrafts">
+          🚀 一键上架草稿
+        </el-button>
         <el-button :loading="loading" @click="loadProducts">
           <el-icon><Refresh /></el-icon>
           刷新
@@ -76,12 +79,12 @@
             @change="filterByCategory"
           >
             <el-option label="全部分类" value="" />
-            <el-option label="中药材" value="中药材" />
-            <el-option label="养生产品" value="养生产品" />
-            <el-option label="医疗器械" value="医疗器械" />
-            <el-option label="保健食品" value="保健食品" />
-            <el-option label="中医书籍" value="中医书籍" />
-            <el-option label="配套用品" value="配套用品" />
+            <el-option label="中药材" value="HERBS" />
+            <el-option label="养生产品" value="WELLNESS" />
+            <el-option label="医疗器械" value="MEDICAL_DEVICE" />
+            <el-option label="保健食品" value="HEALTH_FOOD" />
+            <el-option label="中医书籍" value="TCM_BOOKS" />
+            <el-option label="配套用品" value="ACCESSORIES" />
           </el-select>
           
           <el-select
@@ -92,9 +95,9 @@
             @change="filterByStatus"
           >
             <el-option label="全部状态" value="" />
-            <el-option label="在售" value="active" />
-            <el-option label="下架" value="inactive" />
-            <el-option label="缺货" value="out_of_stock" />
+            <el-option label="在售" value="ACTIVE" />
+            <el-option label="下架" value="INACTIVE" />
+            <el-option label="缺货" value="OUT_OF_STOCK" />
           </el-select>
         </div>
       </el-card>
@@ -143,7 +146,7 @@
           
           <el-table-column prop="price" label="价格" width="120" sortable>
             <template #default="scope">
-              <span class="price">¥{{ scope.row.price.toFixed(2) }}</span>
+              <span class="price">¥{{ Number(scope.row?.price || 0).toFixed(2) }}</span>
             </template>
           </el-table-column>
           
@@ -162,8 +165,8 @@
           
           <el-table-column prop="status" label="状态" width="100">
             <template #default="scope">
-              <el-tag :type="scope.row.status === 'active' ? 'success' : 'danger'" size="small">
-                {{ scope.row.status === 'active' ? '在售' : '下架' }}
+              <el-tag :type="scope.row.status === 'ACTIVE' ? 'success' : 'danger'" size="small">
+                {{ scope.row.status === 'ACTIVE' ? '在售' : '下架' }}
               </el-tag>
             </template>
           </el-table-column>
@@ -173,10 +176,10 @@
               <el-button size="small" @click="editProduct(scope.row)">编辑</el-button>
               <el-button
                 size="small"
-                :type="scope.row.status === 'active' ? 'warning' : 'success'"
+                :type="scope.row.status === 'ACTIVE' ? 'warning' : 'success'"
                 @click="toggleProductStatus(scope.row)"
               >
-                {{ scope.row.status === 'active' ? '下架' : '上架' }}
+                {{ scope.row.status === 'ACTIVE' ? '下架' : '上架' }}
               </el-button>
               <el-button size="small" type="danger" @click="deleteProduct(scope.row)">删除</el-button>
             </template>
@@ -186,8 +189,8 @@
         <!-- 批量操作 -->
         <div class="batch-actions" v-if="selectedProducts.length > 0">
           <span>已选择 {{ selectedProducts.length }} 个商品</span>
-          <el-button size="small" @click="batchUpdateStatus('active')">批量上架</el-button>
-          <el-button size="small" @click="batchUpdateStatus('inactive')">批量下架</el-button>
+          <el-button size="small" @click="batchUpdateStatus('ACTIVE')">批量上架</el-button>
+          <el-button size="small" @click="batchUpdateStatus('INACTIVE')">批量下架</el-button>
           <el-button size="small" type="danger" @click="batchDelete">批量删除</el-button>
         </div>
 
@@ -229,12 +232,12 @@
           <el-col :span="12">
             <el-form-item label="商品分类" prop="category">
               <el-select v-model="productForm.category" placeholder="选择商品分类" style="width: 100%">
-                <el-option label="中药材" value="中药材" />
-                <el-option label="养生产品" value="养生产品" />
-                <el-option label="医疗器械" value="医疗器械" />
-                <el-option label="保健食品" value="保健食品" />
-                <el-option label="中医书籍" value="中医书籍" />
-                <el-option label="配套用品" value="配套用品" />
+                <el-option label="中药材" value="HERBS" />
+                <el-option label="养生产品" value="WELLNESS" />
+                <el-option label="医疗器械" value="MEDICAL_DEVICE" />
+                <el-option label="保健食品" value="HEALTH_FOOD" />
+                <el-option label="中医书籍" value="TCM_BOOKS" />
+                <el-option label="配套用品" value="ACCESSORIES" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -298,9 +301,9 @@
 
         <el-form-item label="商品状态">
           <el-radio-group v-model="productForm.status">
-            <el-radio label="active">在售</el-radio>
-            <el-radio label="inactive">下架</el-radio>
-            <el-radio label="out_of_stock">缺货</el-radio>
+            <el-radio label="ACTIVE">在售</el-radio>
+            <el-radio label="INACTIVE">下架</el-radio>
+            <el-radio label="OUT_OF_STOCK">缺货</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -323,6 +326,7 @@ import { Plus, Refresh, Search, Picture } from '@element-plus/icons-vue'
 // 响应式数据
 const loading = ref(false)
 const saving = ref(false)
+const activatingDrafts = ref(false)
 const showProductDialog = ref(false)
 const isEditing = ref(false)
 const selectedProducts = ref<any[]>([])
@@ -353,7 +357,7 @@ const productForm = ref({
   price: 0,
   stock: 0,
   image: '',
-  status: 'active',
+  status: 'ACTIVE',
   sales: 0
 })
 
@@ -428,11 +432,11 @@ const resetProductForm = () => {
     name: '',
     description: '',
     details: '',
-    category: '中药材', // 默认选择第一个分类
+    category: 'HERBS', // 默认选择第一个分类
     price: 0,
     stock: 0,
     image: '',
-    status: 'active',
+    status: 'ACTIVE',
     sales: 0
   }
   if (productFormRef.value) {
@@ -465,9 +469,9 @@ const saveProduct = async () => {
     saving.value = true
 
     const token = localStorage.getItem('admin_token')
-    const apiUrl = isEditing.value 
-      ? `/api/admin/products/${productForm.value.id}`
-      : '/api/admin/products'
+    const apiUrl = isEditing.value
+      ? `/api/products-simple/${productForm.value.id}`
+      : '/api/products-simple/'
     
     const method = isEditing.value ? 'PUT' : 'POST'
     
@@ -520,15 +524,29 @@ const saveProduct = async () => {
     resetProductForm()
   } catch (error) {
     console.error('保存商品失败:', error)
-    ElMessage.error('保存失败，请检查网络连接和表单信息')
+    
+    // 根据错误类型显示不同的错误信息
+    if (error.message) {
+      if (error.message.includes('401') || error.message.includes('403')) {
+        ElMessage.error('认证失败，请重新登录')
+      } else if (error.message.includes('422')) {
+        ElMessage.error('数据格式错误，请检查表单信息')
+      } else if (error.message.includes('400')) {
+        ElMessage.error('请求参数错误，请检查表单信息')
+      } else {
+        ElMessage.error(`保存失败：${error.message}`)
+      }
+    } else {
+      ElMessage.error('保存失败，请检查网络连接和表单信息')
+    }
   } finally {
     saving.value = false
   }
 }
 
 const toggleProductStatus = async (product: any) => {
-  const newStatus = product.status === 'active' ? 'inactive' : 'active'
-  const action = newStatus === 'active' ? '上架' : '下架'
+  const newStatus = product.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+  const action = newStatus === 'ACTIVE' ? '上架' : '下架'
   
   try {
     await ElMessageBox.confirm(
@@ -542,7 +560,7 @@ const toggleProductStatus = async (product: any) => {
     )
 
     const token = localStorage.getItem('admin_token')
-    const response = await fetch(`/api/admin/products/${product.id}`, {
+    const response = await fetch(`/api/products-simple/${product.id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -563,10 +581,28 @@ const toggleProductStatus = async (product: any) => {
     
     ElMessage.success(`商品已${action}`)
   } catch (error) {
-    if (error.message && error.message.includes('状态更新失败')) {
+    // 用户取消操作的情况
+    if (error === 'cancel') {
+      return
+    }
+    
+    // API错误的情况
+    console.error(`${action}商品失败:`, error)
+    
+    // 根据错误类型显示不同的错误信息
+    if (error.message) {
+      if (error.message.includes('401') || error.message.includes('403')) {
+        ElMessage.error('认证失败，请重新登录')
+      } else if (error.message.includes('404')) {
+        ElMessage.error('商品不存在')
+      } else if (error.message.includes('422')) {
+        ElMessage.error('数据格式错误')
+      } else {
+        ElMessage.error(`${action}失败：${error.message}`)
+      }
+    } else {
       ElMessage.error(`${action}失败，请检查网络连接`)
     }
-    // 其他情况是用户取消操作，不显示错误
   }
 }
 
@@ -583,7 +619,7 @@ const deleteProduct = async (product: any) => {
     )
 
     const token = localStorage.getItem('admin_token')
-    const response = await fetch(`/api/admin/products/${product.id}`, {
+    const response = await fetch(`/api/products-simple/${product.id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -606,10 +642,26 @@ const deleteProduct = async (product: any) => {
     
     ElMessage.success('商品删除成功')
   } catch (error) {
-    if (error.message && error.message.includes('删除商品失败')) {
+    // 用户取消操作的情况
+    if (error === 'cancel') {
+      return
+    }
+    
+    // API错误的情况
+    console.error('删除商品失败:', error)
+    
+    // 根据错误类型显示不同的错误信息
+    if (error.message) {
+      if (error.message.includes('401') || error.message.includes('403')) {
+        ElMessage.error('认证失败，请重新登录')
+      } else if (error.message.includes('404')) {
+        ElMessage.error('商品不存在')
+      } else {
+        ElMessage.error(`删除失败：${error.message}`)
+      }
+    } else {
       ElMessage.error('删除失败，请检查网络连接')
     }
-    // 其他情况是用户取消操作，不显示错误
   }
 }
 
@@ -618,7 +670,7 @@ const handleSelectionChange = (selection: any[]) => {
 }
 
 const batchUpdateStatus = async (status: string) => {
-  const action = status === 'active' ? '上架' : '下架'
+  const action = status === 'ACTIVE' ? '上架' : '下架'
   
   try {
     await ElMessageBox.confirm(
@@ -633,7 +685,7 @@ const batchUpdateStatus = async (status: string) => {
 
     const token = localStorage.getItem('admin_token')
     const updatePromises = selectedProducts.value.map(product => 
-      fetch(`/api/admin/products/${product.id}`, {
+      fetch(`/api/products-simple/${product.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -684,8 +736,8 @@ const batchDelete = async () => {
     )
 
     const token = localStorage.getItem('admin_token')
-    const deletePromises = selectedProducts.value.map(product => 
-      fetch(`/api/admin/products/${product.id}`, {
+    const deletePromises = selectedProducts.value.map(product =>
+      fetch(`/api/products-simple/${product.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -695,7 +747,7 @@ const batchDelete = async () => {
     )
 
     const results = await Promise.allSettled(deletePromises)
-    
+
     // 检查是否有失败的请求
     const failedCount = results.filter(result => result.status === 'rejected').length
     const successCount = selectedProducts.value.length - failedCount
@@ -715,13 +767,79 @@ const batchDelete = async () => {
         }
       }
     })
-    
+
     // 重新计算统计数据
     updateProductStats()
-    
+
     selectedProducts.value = []
   } catch {
     // 用户取消操作
+  }
+}
+
+const activateAllDraftProducts = async () => {
+  // 查找所有DRAFT状态的商品
+  const draftProducts = allProducts.value.filter(p => p.status === 'DRAFT')
+
+  if (draftProducts.length === 0) {
+    ElMessage.info('没有找到草稿状态的商品')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `找到 ${draftProducts.length} 个草稿商品，确认全部上架吗？`,
+      '一键上架草稿',
+      {
+        confirmButtonText: '确认上架',
+        cancelButtonText: '取消',
+        type: 'info',
+      }
+    )
+
+    activatingDrafts.value = true
+    const token = localStorage.getItem('admin_token')
+
+    // 批量上架
+    const updatePromises = draftProducts.map(product =>
+      fetch(`/api/products-simple/${product.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'ACTIVE' })
+      })
+    )
+
+    const results = await Promise.allSettled(updatePromises)
+
+    // 统计结果
+    const failedCount = results.filter(result => result.status === 'rejected').length
+    const successCount = draftProducts.length - failedCount
+
+    if (failedCount > 0) {
+      ElMessage.warning(`成功上架 ${successCount} 个商品，${failedCount} 个失败`)
+    } else {
+      ElMessage.success(`🎉 已上架 ${successCount} 个商品！`)
+    }
+
+    // 更新本地数据
+    draftProducts.forEach((product, index) => {
+      if (results[index].status === 'fulfilled') {
+        product.status = 'ACTIVE'
+      }
+    })
+
+    // 重新计算统计数据
+    updateProductStats()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('上架草稿商品失败:', error)
+      ElMessage.error('批量上架失败，请重试')
+    }
+  } finally {
+    activatingDrafts.value = false
   }
 }
 
@@ -741,7 +859,7 @@ const loadProducts = async () => {
   loading.value = true
   try {
     const token = localStorage.getItem('admin_token')
-    const response = await fetch('/api/admin/products', {
+    const response = await fetch('/api/products-simple/', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -761,7 +879,20 @@ const loadProducts = async () => {
     ElMessage.success('商品数据加载成功')
   } catch (error) {
     console.error('加载商品失败:', error)
-    ElMessage.error('商品数据加载失败')
+    
+    // 根据错误类型显示不同的错误信息
+    if (error.message) {
+      if (error.message.includes('401') || error.message.includes('403')) {
+        ElMessage.error('认证失败，请重新登录')
+        // 可能需要跳转到登录页
+        localStorage.removeItem('admin_token')
+        window.location.href = '/admin/login'
+      } else {
+        ElMessage.error(`数据加载失败：${error.message}`)
+      }
+    } else {
+      ElMessage.error('商品数据加载失败，请检查网络连接')
+    }
   } finally {
     loading.value = false
   }
@@ -780,7 +911,7 @@ const updateProductStats = () => {
   const products = allProducts.value
   productStats.value = {
     total: products.length,
-    active: products.filter(p => p.status === 'active').length,
+    active: products.filter(p => p.status === 'ACTIVE').length,
     lowStock: products.filter(p => p.stock <= 10).length,
     revenue: products.reduce((sum, p) => sum + (p.price * (p.sales || 0)), 0)
   }

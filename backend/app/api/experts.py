@@ -1,12 +1,21 @@
 """
 专家相关API路由
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from app import schemas, models
 from app.database import get_db
+from app.core.exceptions import (
+    NotFoundException, 
+    BusinessException, 
+    ValidationException, 
+    FileTooLargeException, 
+    UnsupportedFileTypeException, 
+    DatabaseException, 
+    CommonErrors
+)
 
 router = APIRouter(tags=["experts"])
 
@@ -38,10 +47,7 @@ def read_expert(expert_id: int, db: Session = Depends(get_db)):
     """获取特定专家"""
     db_expert = db.query(models.Expert).filter(models.Expert.id == expert_id).first()
     if db_expert is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Expert not found"
-        )
+        raise CommonErrors.EXPERT_NOT_FOUND
     return db_expert
 
 @router.put("/{expert_id}", response_model=schemas.Expert)
@@ -53,10 +59,7 @@ def update_expert(
     """更新专家信息"""
     db_expert = db.query(models.Expert).filter(models.Expert.id == expert_id).first()
     if db_expert is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Expert not found"
-        )
+        raise CommonErrors.EXPERT_NOT_FOUND
     
     # 更新专家信息
     for field, value in expert_update.dict(exclude_unset=True).items():
@@ -71,10 +74,7 @@ def delete_expert(expert_id: int, db: Session = Depends(get_db)):
     """删除专家"""
     db_expert = db.query(models.Expert).filter(models.Expert.id == expert_id).first()
     if db_expert is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Expert not found"
-        )
+        raise CommonErrors.EXPERT_NOT_FOUND
     
     db.delete(db_expert)
     db.commit()

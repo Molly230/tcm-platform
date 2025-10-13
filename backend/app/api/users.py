@@ -1,7 +1,7 @@
 """
 用户相关API路由
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
@@ -28,6 +28,16 @@ from app.core.permissions import (
     require_super_admin_role,
     check_resource_ownership
 )
+from app.core.exceptions import (
+    NotFoundException, 
+    BusinessException, 
+    ValidationException, 
+    FileTooLargeException, 
+    UnsupportedFileTypeException, 
+    DatabaseException, 
+    CommonErrors,
+    PermissionDeniedException
+)
 
 router = APIRouter(tags=["users"])
 
@@ -37,25 +47,16 @@ def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
     """用户注册"""
     # 检查邮箱是否已存在
     if db.query(models.User).filter(models.User.email == user_data.email).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="邮箱已被注册"
-        )
+        raise CommonErrors.EMAIL_ALREADY_EXISTS
     
     # 检查用户名是否已存在
     if db.query(models.User).filter(models.User.username == user_data.username).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="用户名已被使用"
-        )
+        raise CommonErrors.USERNAME_ALREADY_EXISTS
     
     # 检查手机号是否已存在（如果提供）
     if user_data.phone:
         if db.query(models.User).filter(models.User.phone == user_data.phone).first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="手机号已被注册"
-            )
+            raise CommonErrors.PHONE_ALREADY_EXISTS
     
     # 创建新用户
     hashed_password = get_password_hash(user_data.password)
@@ -87,23 +88,14 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
     
     # 验证用户和密码
     if not user or not verify_password(login_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="邮箱/用户名或密码错误"
-        )
+        raise CommonErrors.INVALID_CREDENTIALS
     
     # 检查用户状态
     if not user.is_active or user.status == models.UserStatus.BANNED:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="账户已被禁用"
-        )
+        raise PermissionDeniedException("账户已被禁用")
     
     if user.status == models.UserStatus.SUSPENDED:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="账户已被暂停"
-        )
+        raise PermissionDeniedException("账户已被暂停")
     
     # 更新最后登录时间
     user.last_login = datetime.utcnow()
@@ -137,25 +129,16 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
     """创建新用户（管理员用）"""
     # 检查邮箱是否已存在
     if db.query(models.User).filter(models.User.email == user_data.email).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="邮箱已被注册"
-        )
+        raise CommonErrors.EMAIL_ALREADY_EXISTS
     
     # 检查用户名是否已存在
     if db.query(models.User).filter(models.User.username == user_data.username).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="用户名已被使用"
-        )
+        raise CommonErrors.USERNAME_ALREADY_EXISTS
     
     # 检查手机号是否已存在（如果提供）
     if user_data.phone:
         if db.query(models.User).filter(models.User.phone == user_data.phone).first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="手机号已被注册"
-            )
+            raise CommonErrors.PHONE_ALREADY_EXISTS
     
     # 创建新用户
     hashed_password = get_password_hash(user_data.password)
@@ -190,10 +173,7 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     """获取特定用户"""
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if db_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
+        raise CommonErrors.USER_NOT_FOUND
     return db_user
 
 @router.put("/me", response_model=User)
@@ -206,10 +186,7 @@ def update_current_user(user_update: UserUpdate, current_user: models.User = Dep
             models.User.id != current_user.id
         ).first()
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="用户名已被使用"
-            )
+            raise CommonErrors.USERNAME_ALREADY_EXISTS
     
     # 检查手机号是否被其他用户使用
     if user_update.phone and user_update.phone != current_user.phone:
@@ -218,10 +195,7 @@ def update_current_user(user_update: UserUpdate, current_user: models.User = Dep
             models.User.id != current_user.id
         ).first()
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="手机号已被使用"
-            )
+            raise BusinessException("手机号已被使用")
     
     # 更新用户信息
     for field, value in user_update.dict(exclude_unset=True).items():
@@ -238,10 +212,7 @@ def change_password(password_data: UserPasswordUpdate, current_user: models.User
     """更改当前用户密码"""
     # 验证旧密码
     if not verify_password(password_data.old_password, current_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="原密码错误"
-        )
+        raise ValidationException("原密码错误")
     
     # 更新密码
     current_user.hashed_password = get_password_hash(password_data.new_password)
@@ -256,10 +227,7 @@ def update_user(user_id: int, user_update: UserAdminUpdate, current_user: models
     
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if db_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
+        raise CommonErrors.USER_NOT_FOUND
     
     # 检查邮箱是否被其他用户使用
     if user_update.email and user_update.email != db_user.email:
@@ -268,10 +236,7 @@ def update_user(user_id: int, user_update: UserAdminUpdate, current_user: models
             models.User.id != user_id
         ).first()
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="邮箱已被其他用户使用"
-            )
+            raise BusinessException("邮箱已被其他用户使用")
     
     # 更新用户信息
     for field, value in user_update.dict(exclude_unset=True).items():
@@ -289,10 +254,7 @@ def delete_user(user_id: int, current_user: models.User = Depends(require_admin_
     
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if db_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
+        raise CommonErrors.USER_NOT_FOUND
     
     # 软删除：设置为非活跃状态
     db_user.is_active = False

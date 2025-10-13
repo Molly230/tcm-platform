@@ -1,0 +1,15 @@
+
+.payment-container.data-v-6e0fac4f {
+  padding: 40rpx;
+  text-align: center;
+}
+.title.data-v-6e0fac4f {
+  font-size: 36rpx;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 40rpx;
+}
+.coming-soon.data-v-6e0fac4f {
+  color: #999;
+  font-size: 28rpx;
+}

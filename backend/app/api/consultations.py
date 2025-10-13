@@ -1,12 +1,21 @@
 """
 健康咨询相关API路由
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from app import schemas, models
 from app.database import get_db
+from app.core.exceptions import (
+    NotFoundException, 
+    BusinessException, 
+    ValidationException, 
+    FileTooLargeException, 
+    UnsupportedFileTypeException, 
+    DatabaseException, 
+    CommonErrors
+)
 
 router = APIRouter(tags=["consultations"])
 
@@ -39,10 +48,7 @@ def read_consultation(consultation_id: int, db: Session = Depends(get_db)):
         models.Consultation.id == consultation_id
     ).first()
     if db_consultation is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Consultation not found"
-        )
+        raise NotFoundException("咨询记录")
     return db_consultation
 
 @router.put("/{consultation_id}", response_model=schemas.Consultation)
@@ -56,10 +62,7 @@ def update_consultation(
         models.Consultation.id == consultation_id
     ).first()
     if db_consultation is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Consultation not found"
-        )
+        raise NotFoundException("咨询记录")
     
     # 更新咨询记录
     for field, value in consultation_update.dict(exclude_unset=True).items():
@@ -76,10 +79,7 @@ def delete_consultation(consultation_id: int, db: Session = Depends(get_db)):
         models.Consultation.id == consultation_id
     ).first()
     if db_consultation is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Consultation not found"
-        )
+        raise NotFoundException("咨询记录")
     
     db.delete(db_consultation)
     db.commit()

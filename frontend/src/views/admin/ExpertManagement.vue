@@ -7,7 +7,7 @@
         <p>管理平台专家信息、资质认证和服务状态</p>
       </div>
       <div class="header-actions">
-        <el-button type="primary" @click="showCreateDialog = true">
+        <el-button type="primary" @click="createNewExpert">
           <el-icon><Plus /></el-icon>
           新增专家
         </el-button>
@@ -308,27 +308,31 @@
           <el-input v-model="expertForm.title" placeholder="如：主任医师、教授等" />
         </el-form-item>
         
-        <el-form-item label="所在医院" prop="hospital">
-          <el-input v-model="expertForm.hospital" placeholder="请输入所在医院" />
-        </el-form-item>
-        
         <el-form-item label="专业领域" prop="category">
           <el-select v-model="expertForm.category" style="width: 100%">
-            <el-option label="中医内科" value="internal" />
-            <el-option label="中医外科" value="external" />
-            <el-option label="针灸推拿" value="acupuncture" />
-            <el-option label="中药方剂" value="pharmacy" />
-            <el-option label="养生保健" value="wellness" />
+            <el-option label="中医内科" value="INTERNAL" />
+            <el-option label="中医妇科" value="GYNECOLOGY" />
+            <el-option label="中医儿科" value="PEDIATRICS" />
+            <el-option label="针灸推拿" value="ACUPUNCTURE" />
+            <el-option label="中医养生" value="HEALTH" />
+            <el-option label="传统中医" value="TCM" />
+            <el-option label="中医骨科" value="ORTHOPEDICS" />
+            <el-option label="中医皮肤科" value="DERMATOLOGY" />
           </el-select>
         </el-form-item>
-        
-        <el-form-item label="从业年限">
-          <el-input-number v-model="expertForm.experience_years" :min="0" :max="50" />
-          <span style="margin-left: 8px">年</span>
+
+        <el-form-item label="文字咨询">
+          <el-input-number v-model="expertForm.text_price" :min="0" :precision="2" />
+          <span style="margin-left: 8px">元/次</span>
         </el-form-item>
-        
-        <el-form-item label="咨询费用">
-          <el-input-number v-model="expertForm.consultation_fee" :min="0" :precision="2" />
+
+        <el-form-item label="语音咨询">
+          <el-input-number v-model="expertForm.voice_price" :min="0" :precision="2" />
+          <span style="margin-left: 8px">元/次</span>
+        </el-form-item>
+
+        <el-form-item label="视频咨询">
+          <el-input-number v-model="expertForm.video_price" :min="0" :precision="2" />
           <span style="margin-left: 8px">元/次</span>
         </el-form-item>
         
@@ -341,14 +345,6 @@
             show-word-limit
             maxlength="500"
           />
-        </el-form-item>
-        
-        <el-form-item label="认证状态" v-if="editingExpertId">
-          <el-select v-model="expertForm.verification_status" style="width: 100%">
-            <el-option label="待认证" value="pending" />
-            <el-option label="已认证" value="verified" />
-            <el-option label="未通过" value="rejected" />
-          </el-select>
         </el-form-item>
         
         <el-form-item label="服务状态">
@@ -393,7 +389,6 @@ const pageSize = ref(20)
 // 对话框状态
 const showDetailDialog = ref(false)
 const showEditDialog = ref(false)
-const showCreateDialog = ref(false)
 const currentExpert = ref(null)
 const editingExpertId = ref(null)
 
@@ -401,12 +396,12 @@ const editingExpertId = ref(null)
 const expertForm = ref({
   name: '',
   title: '',
-  hospital: '',
-  category: 'internal',
-  experience_years: 0,
-  consultation_fee: 0,
+  category: 'INTERNAL',
+  avatar_url: '',
   description: '',
-  verification_status: 'pending',
+  text_price: 50,
+  voice_price: 100,
+  video_price: 200,
   is_active: true
 })
 
@@ -417,9 +412,6 @@ const expertRules = {
   ],
   title: [
     { required: true, message: '请输入职称', trigger: 'blur' }
-  ],
-  hospital: [
-    { required: true, message: '请输入所在医院', trigger: 'blur' }
   ],
   category: [
     { required: true, message: '请选择专业领域', trigger: 'change' }
@@ -442,12 +434,24 @@ const paginatedExperts = computed(() => {
 const loadExperts = async () => {
   try {
     loading.value = true
-    // 使用模拟数据
-    experts.value = generateMockExperts()
-    filteredExperts.value = experts.value
+
+    // 使用公共API加载数据
+    const response = await fetch('/api/experts/?limit=100')
+
+    if (response.ok) {
+      const data = await response.json()
+      experts.value = data || []
+      filteredExperts.value = experts.value
+    } else {
+      experts.value = []
+      filteredExperts.value = []
+      ElMessage.warning('无法加载专家列表')
+    }
   } catch (error) {
     console.error('加载专家失败:', error)
-    ElMessage.error('加载专家失败')
+    experts.value = []
+    filteredExperts.value = []
+    ElMessage.error('加载专家失败，请检查网络连接')
   } finally {
     loading.value = false
   }
@@ -543,17 +547,33 @@ const viewExpert = (expert: any) => {
   showDetailDialog.value = true
 }
 
+const createNewExpert = () => {
+  editingExpertId.value = null
+  expertForm.value = {
+    name: '',
+    title: '',
+    category: 'INTERNAL',
+    avatar_url: '',
+    description: '',
+    text_price: 50,
+    voice_price: 100,
+    video_price: 200,
+    is_active: true
+  }
+  showEditDialog.value = true
+}
+
 const editExpert = (expert: any) => {
   editingExpertId.value = expert.id
   expertForm.value = {
     name: expert.name,
     title: expert.title,
-    hospital: expert.hospital,
     category: expert.category,
-    experience_years: expert.experience_years || 0,
-    consultation_fee: expert.consultation_fee || 0,
+    avatar_url: expert.avatar_url || '',
     description: expert.description || '',
-    verification_status: expert.verification_status,
+    text_price: expert.text_price || 50,
+    voice_price: expert.voice_price || 100,
+    video_price: expert.video_price || 200,
     is_active: expert.is_active
   }
   showEditDialog.value = true
@@ -563,13 +583,64 @@ const editExpert = (expert: any) => {
 const saveExpert = async () => {
   saving.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    ElMessage.success(editingExpertId.value ? '专家更新成功' : '专家创建成功')
+    const token = localStorage.getItem('admin_token')
+
+    if (editingExpertId.value) {
+      // 更新专家
+      const response = await fetch(`/api/experts/${editingExpertId.value}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(expertForm.value)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || '更新失败')
+      }
+
+      ElMessage.success('专家更新成功')
+    } else {
+      // 创建专家
+      const response = await fetch('/api/experts/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(expertForm.value)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || '创建失败')
+      }
+
+      ElMessage.success('专家创建成功')
+    }
+
     showEditDialog.value = false
     editingExpertId.value = null
+
+    // 重置表单
+    expertForm.value = {
+      name: '',
+      title: '',
+      category: 'INTERNAL',
+      avatar_url: '',
+      description: '',
+      text_price: 50,
+      voice_price: 100,
+      video_price: 200,
+      is_active: true
+    }
+
     await loadExperts()
   } catch (error) {
-    ElMessage.error('保存失败')
+    console.error('保存失败:', error)
+    ElMessage.error(error.message || '保存失败，请稍后重试')
   } finally {
     saving.value = false
   }
@@ -602,16 +673,28 @@ const handleExpertAction = (command: string) => {
 
 const handleDeleteExpert = async (expertId: number) => {
   try {
-    await ElMessageBox.confirm('确定要删除这个专家吗？', '删除确认', {
+    await ElMessageBox.confirm('确定要删除这个专家吗？此操作不可撤销。', '删除确认', {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
       type: 'warning'
     })
     
+    // 实际调用删除API
+    const response = await fetch(`/api/experts/${expertId}`, {
+      method: 'DELETE'
+    })
+    
+    if (!response.ok) {
+      throw new Error(`删除失败: ${response.status}`)
+    }
+    
     ElMessage.success('专家删除成功')
     await loadExperts()
-  } catch {
-    // 用户取消删除
+  } catch (error) {
+    if (error.message && error.message.includes('删除失败')) {
+      ElMessage.error('删除失败，请检查网络连接')
+    }
+    // 其他情况是用户取消操作，不显示错误
   }
 }
 

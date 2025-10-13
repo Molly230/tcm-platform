@@ -1,411 +1,474 @@
 <template>
-  <div class="products">
-    <PageContainer>
-      <div class="products-content" v-loading="loading">
-        <div class="products-header">
-          <h2>中医商城</h2>
-          <p>精选中药材、养生产品，传承千年中医智慧</p>
-          
-          <!-- 搜索和筛选 -->
-          <div class="search-filters">
-            <el-input
-              v-model="searchText"
-              placeholder="搜索商品..."
-              clearable
-              @input="onSearch"
-              class="search-input"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-            
-          </div>
-        </div>
-        
-        <!-- 常用产品快选区域 -->
-        <div class="common-products" v-if="commonProducts.length > 0">
-          <h3>常用产品</h3>
-          <div class="common-products-grid">
-            <div 
-              v-for="product in commonProducts" 
-              :key="product.id"
-              class="common-product-card"
-              @click="addToCart(product)"
-            >
-              <img :src="product.images?.[0] || '/default-product.jpg'" :alt="product.name">
-              <div class="product-name">{{ product.name }}</div>
-              <div class="product-price">¥{{ product.price }}</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 商品网格 -->
-        <div class="products-grid">
-          <el-card 
-            class="product-card" 
-            v-for="product in displayProducts" 
-            :key="product.id"
-            shadow="hover"
-            @click="viewProduct(product.id)"
+  <div class="products-page">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1>🛍️ 中医商城</h1>
+        <p>精选优质中医产品，健康生活从这里开始</p>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ total }}</span>
+          <span class="stat-label">商品总数</span>
+          <el-button
+            type="primary"
+            size="small"
+            @click="manualRefresh"
+            :loading="loading"
+            style="margin-top: 8px;"
           >
-            <div class="product-image">
-              <img :src="getProductImage(product)" :alt="product.name">
-              <div class="product-badges">
-                <span v-if="product.is_featured" class="badge featured">推荐</span>
-                <span v-if="product.discount < 1" class="badge discount">
-                  {{ Math.round(product.discount * 10) }}折
-                </span>
-              </div>
-            </div>
-            
-            <div class="product-info">
-              <h3 class="product-name">{{ product.name }}</h3>
-              <p class="product-description">{{ product.description }}</p>
-              
-              <div class="product-features" v-if="product.features?.length">
-                <el-tag 
-                  v-for="feature in product.features.slice(0, 2)" 
-                  :key="feature"
-                  size="small"
-                  type="success"
-                >
-                  {{ feature }}
-                </el-tag>
-              </div>
-              
-              <div class="product-specs" v-if="product.specifications">
-                <span v-if="product.specifications.weight" class="spec">
-                  重量: {{ product.specifications.weight }}
-                </span>
-                <span v-if="product.specifications.origin" class="spec">
-                  产地: {{ product.specifications.origin }}
-                </span>
-              </div>
-              
-              <div class="product-meta">
-                <div class="product-rating">
-                  <el-rate 
-                    v-model="product.rating" 
-                    disabled 
-                    show-score 
-                    score-template="{value}"
-                    size="small"
-                  />
-                  <span class="review-count">({{ product.review_count }}评价)</span>
-                </div>
-                <div class="product-sales">已售{{ product.sales_count }}件</div>
-              </div>
-              
-              <div class="product-price">
-                <span class="current-price">¥{{ product.price }}</span>
-                <span 
-                  v-if="product.original_price && product.original_price > product.price" 
-                  class="original-price"
-                >
-                  ¥{{ product.original_price }}
-                </span>
-              </div>
-              
-              <div class="product-actions">
-                <el-button 
-                  type="primary" 
-                  size="small"
-                  @click.stop="addToCart(product)"
-                  :loading="cartLoading[product.id]"
-                >
-                  加入购物车
-                </el-button>
-                <el-button 
-                  size="small"
-                  @click.stop="buyNow(product)"
-                >
-                  立即购买
-                </el-button>
-              </div>
-            </div>
-          </el-card>
-        </div>
-        
-        <!-- 空状态 -->
-        <div v-if="displayProducts.length === 0 && !loading" class="empty-state">
-          <el-empty description="暂无相关商品">
-            <el-button type="primary" @click="resetFilters">查看全部商品</el-button>
-          </el-empty>
-        </div>
-        
-        <!-- 加载更多 -->
-        <div class="load-more" v-if="displayProducts.length > 0 && hasMore">
-          <el-button 
-            @click="loadMore" 
-            :loading="loadingMore"
-            size="large"
-          >
-            加载更多商品
+            🔄 刷新
           </el-button>
         </div>
       </div>
-    </PageContainer>
+    </div>
+
+    <!-- 搜索和筛选 -->
+    <div class="filter-section">
+      <el-card>
+        <el-row :gutter="20" align="middle">
+          <el-col :span="8">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索商品名称、描述..."
+              prefix-icon="Search"
+              clearable
+              @input="handleSearch"
+            />
+          </el-col>
+          <el-col :span="6">
+            <el-select v-model="selectedCategory" placeholder="选择分类" clearable @change="handleCategoryChange">
+              <el-option label="全部分类" value="" />
+              <el-option label="🌿 中药材" value="HERBS" />
+              <el-option label="💊 养生产品" value="WELLNESS" />
+              <el-option label="🏥 医疗器械" value="MEDICAL_DEVICE" />
+              <el-option label="🍯 保健食品" value="HEALTH_FOOD" />
+              <el-option label="📚 中医书籍" value="TCM_BOOKS" />
+              <el-option label="🛠️ 配套用品" value="ACCESSORIES" />
+            </el-select>
+          </el-col>
+          <el-col :span="6">
+            <el-select v-model="sortBy" placeholder="排序方式" @change="handleSort">
+              <el-option label="综合排序" value="default" />
+              <el-option label="价格从低到高" value="price_asc" />
+              <el-option label="价格从高到低" value="price_desc" />
+              <el-option label="库存优先" value="stock" />
+            </el-select>
+          </el-col>
+          <el-col :span="4">
+            <el-switch
+              v-model="showFeaturedOnly"
+              @change="handleFeaturedFilter"
+              active-text="仅显示推荐"
+            />
+          </el-col>
+        </el-row>
+      </el-card>
+    </div>
+
+    <!-- 商品网格 -->
+    <div class="products-grid" v-loading="loading">
+      <div
+        v-for="product in displayProducts"
+        :key="product.id"
+        class="product-card"
+        @click="goToProductDetail(product.id)"
+      >
+        <!-- 商品图片 -->
+        <div class="product-image">
+          <img :src="getProductImage(product)" :alt="product.name" />
+          <div class="product-badges">
+            <span v-if="product.is_featured" class="badge featured">⭐ 推荐</span>
+            <span v-if="product.status === 'ACTIVE'" class="badge active">在售</span>
+          </div>
+        </div>
+
+        <!-- 商品信息 -->
+        <div class="product-info">
+          <div class="product-category">{{ getCategoryName(product.category) }}</div>
+          <h3 class="product-name">{{ product.name }}</h3>
+          <p class="product-description">{{ product.description || '暂无详细描述' }}</p>
+
+          <!-- 库存信息 -->
+          <div class="product-stock">
+            <span class="stock-label">库存:</span>
+            <span :class="['stock-value', { 'low-stock': product.stock_quantity < 10 }]">
+              {{ product.stock_quantity }}件
+            </span>
+          </div>
+
+          <!-- 价格 -->
+          <div class="product-price">
+            <span class="current-price">¥{{ parseFloat(product.price).toFixed(2) }}</span>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="product-actions">
+            <el-button
+              type="primary"
+              size="small"
+              :disabled="product.stock_quantity <= 0"
+              @click.stop="addToCart(product)"
+              :loading="addingToCart[product.id]"
+            >
+              <el-icon><ShoppingCart /></el-icon>
+              {{ product.stock_quantity > 0 ? '加入购物车' : '缺货' }}
+            </el-button>
+            <el-button
+              size="small"
+              :disabled="product.stock_quantity <= 0"
+              @click.stop="buyNow(product)"
+            >
+              立即购买
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 空状态 -->
+    <div v-if="!loading && displayProducts.length === 0" class="empty-state">
+      <el-empty description="暂无商品数据">
+        <el-button type="primary" @click="fetchProducts">刷新数据</el-button>
+      </el-empty>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination-section" v-if="total > pageSize">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="[8, 16, 32]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import PageContainer from '../components/PageContainer.vue'
-import { PLACEHOLDER_IMAGES } from '@/utils/placeholder'
+import { ShoppingCart } from '@element-plus/icons-vue'
+import { useCartStore } from '../stores/cart'
+
+// 商品接口定义
+interface Product {
+  id: number
+  name: string
+  description: string
+  category: string
+  price: string | number
+  stock_quantity: number
+  is_featured: boolean
+  is_common: boolean
+  images: string[]
+  status: string
+  audit_status: string
+  created_at: string
+  updated_at: string
+  created_by: number
+  is_deleted: boolean
+  usage_instructions?: string
+}
 
 const router = useRouter()
+const cartStore = useCartStore()
 
 // 响应式数据
-const activeTab = ref('all')
-const searchText = ref('')
+const loading = ref(false)
+const products = ref<Product[]>([])
+const searchKeyword = ref('')
 const selectedCategory = ref('')
-const loading = ref(true)
-const loadingMore = ref(false)
-const allProducts = ref<any[]>([])
+const sortBy = ref('default')
+const showFeaturedOnly = ref(false)
 const currentPage = ref(1)
-const pageSize = ref(4)
-const hasMore = ref(true)
-const cartLoading = ref<Record<number, boolean>>({})
-const commonProducts = ref<any[]>([]) // 常用产品
+const pageSize = ref(8)
+const total = ref(0)
+const addingToCart = ref<Record<number, boolean>>({})
 
-// 计算属性 - 筛选后的商品
-const displayProducts = computed(() => {
-  console.log('计算displayProducts - allProducts长度:', allProducts.value.length)
-  console.log('搜索文本:', searchText.value)
-  
-  let filtered = allProducts.value
+// 分类名称映射
+const categoryNames = {
+  'HERBS': '🌿 中药材',
+  'WELLNESS': '💊 养生产品',
+  'MEDICAL_DEVICE': '🏥 医疗器械',
+  'HEALTH_FOOD': '🍯 保健食品',
+  'TCM_BOOKS': '📚 中医书籍',
+  'ACCESSORIES': '🛠️ 配套用品'
+}
 
-  // 搜索筛选
-  if (searchText.value) {
-    filtered = filtered.filter(product => 
-      product.name.toLowerCase().includes(searchText.value.toLowerCase()) ||
-      (product.features && product.features.join(' ').includes(searchText.value))
+// 计算属性
+const filteredProducts = computed(() => {
+  let result = products.value
+
+  // 搜索过滤
+  if (searchKeyword.value) {
+    const keyword = searchKeyword.value.toLowerCase()
+    result = result.filter(product =>
+      product.name.toLowerCase().includes(keyword) ||
+      (product.description && product.description.toLowerCase().includes(keyword))
     )
   }
 
-  console.log('过滤后商品数量:', filtered.length)
-  return filtered
+  // 分类过滤
+  if (selectedCategory.value) {
+    result = result.filter(product => product.category === selectedCategory.value)
+  }
+
+  // 推荐过滤
+  if (showFeaturedOnly.value) {
+    result = result.filter(product => product.is_featured)
+  }
+
+  // 排序
+  if (sortBy.value === 'price_asc') {
+    result.sort((a, b) => parseFloat(a.price.toString()) - parseFloat(b.price.toString()))
+  } else if (sortBy.value === 'price_desc') {
+    result.sort((a, b) => parseFloat(b.price.toString()) - parseFloat(a.price.toString()))
+  } else if (sortBy.value === 'stock') {
+    result.sort((a, b) => b.stock_quantity - a.stock_quantity)
+  }
+
+  return result
 })
 
-// 获取常用产品
-const fetchCommonProducts = async () => {
-  try {
-    const response = await fetch('/api/products/common')
-    if (response.ok) {
-      commonProducts.value = await response.json()
-    }
-  } catch (error) {
-    console.error('获取常用产品失败:', error)
-  }
-}
+// 分页显示的商品
+const displayProducts = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredProducts.value.slice(start, end)
+})
 
-// 获取商品数据
-const fetchProducts = async (page = 1, append = false) => {
+// 方法
+const fetchProducts = async () => {
+  loading.value = true
   try {
-    if (page === 1) loading.value = true
-    else loadingMore.value = true
+    const response = await fetch('/api/products-simple/')
 
-    console.log('正在获取商品数据...')
-    const response = await fetch(`/api/products/?skip=${(page - 1) * pageSize.value}&limit=${pageSize.value}`)
-    console.log('API响应状态:', response.status, response.ok)
-    
     if (!response.ok) {
-      throw new Error(`API错误: ${response.status}`)
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
-    
-    const products = await response.json()
-    console.log('获取到商品数据:', products.length, '个商品')
-    
-    if (append) {
-      allProducts.value.push(...products)
+
+    const data = await response.json()
+
+    if (Array.isArray(data)) {
+      console.log('🔍 API返回商品总数:', data.length)
+      console.log('🔍 所有商品状态:', data.map(p => ({id: p.id, name: p.name, status: p.status})))
+
+      // 只显示ACTIVE状态的商品
+      products.value = data.filter(product => product.status === 'ACTIVE')
+      total.value = products.value.length
+
+      console.log('✅ ACTIVE商品过滤后数量:', products.value.length, '个商品')
+      console.log('✅ 过滤后商品列表:', products.value.map(p => ({id: p.id, name: p.name, status: p.status})))
     } else {
-      allProducts.value = products
+      console.error('API返回的数据格式不正确:', data)
+      ElMessage.error('商品数据格式错误')
     }
-    
-    hasMore.value = products.length === pageSize.value
-    currentPage.value = page
-    
-    console.log('商品数据设置完成:', allProducts.value.length)
-    
   } catch (error) {
-    console.error('获取商品失败:', error)
-    ElMessage.error(`获取商品失败: ${error.message}`)
+    console.error('获取商品列表失败:', error)
+    ElMessage.error('获取商品列表失败，请检查网络连接')
   } finally {
     loading.value = false
-    loadingMore.value = false
   }
 }
 
-// 获取商品图片
-const getProductImage = (product: any) => {
+const getCategoryName = (category: string) => {
+  return categoryNames[category] || category
+}
+
+const getProductImage = (product: Product) => {
   if (product.images && product.images.length > 0) {
     return product.images[0]
   }
-  // 默认占位图
-  return PLACEHOLDER_IMAGES.product
+  // 默认图片
+  return 'https://via.placeholder.com/300x200?text=' + encodeURIComponent(product.name)
 }
 
-// 事件处理
-const onSearch = () => {
-  // 搜索是响应式的，通过computed自动过滤
-}
+const addToCart = async (product: Product) => {
+  if (product.stock_quantity <= 0) {
+    ElMessage.warning('商品库存不足')
+    return
+  }
 
-const onCategoryChange = () => {
-  // 分类变化时同步更新标签
-  activeTab.value = selectedCategory.value || 'all'
-}
+  addingToCart.value[product.id] = true
 
-const onTabChange = (tabName: string) => {
-  selectedCategory.value = tabName === 'all' ? '' : tabName
-}
-
-const resetFilters = () => {
-  activeTab.value = 'all'
-  selectedCategory.value = ''
-  searchText.value = ''
-}
-
-const loadMore = () => {
-  fetchProducts(currentPage.value + 1, true)
-}
-
-// 商品操作
-const viewProduct = (productId: number) => {
-  router.push(`/products/${productId}`)
-}
-
-const addToCart = async (product: any) => {
   try {
-    cartLoading.value[product.id] = true
-    
-    // 获取现有购物车数据
-    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]')
-    
-    // 检查商品是否已存在
-    const existingItemIndex = existingCart.findIndex((item: any) => item.id === product.id)
-    
-    if (existingItemIndex > -1) {
-      // 如果已存在，增加数量
-      existingCart[existingItemIndex].quantity += 1
-    } else {
-      // 如果不存在，添加新商品
-      existingCart.push({
-        id: product.id,
-        product: product,
-        quantity: 1,
-        selected: true
-      })
-    }
-    
-    // 保存到本地存储
-    localStorage.setItem('cart', JSON.stringify(existingCart))
-    
-    // 触发购物车更新事件
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
-    
-    ElMessage.success('已加入购物车')
+    cartStore.addToCart(product, 1)
+    ElMessage.success(`${product.name} 已加入购物车`)
   } catch (error) {
-    console.error('加入购物车失败:', error)
-    ElMessage.error('加入购物车失败')
+    ElMessage.error(error.message || '加入购物车失败')
   } finally {
-    cartLoading.value[product.id] = false
+    addingToCart.value[product.id] = false
   }
 }
 
-const buyNow = (product: any) => {
-  // 创建临时购物车数据用于直接购买
-  const buyNowData = [{
-    id: product.id,
-    product: product,
-    quantity: 1,
-    selected: true
-  }]
-  
-  // 保存到本地存储（临时）
-  localStorage.setItem('cart', JSON.stringify(buyNowData))
-  
-  // 跳转到结算页面
-  router.push('/checkout')
+const buyNow = (product: Product) => {
+  if (product.stock_quantity <= 0) {
+    ElMessage.warning('商品库存不足')
+    return
+  }
+
+  // 立即购买：跳转到结算页面，使用查询参数传递商品信息
+  router.push({
+    path: '/checkout',
+    query: {
+      productId: product.id.toString(),
+      quantity: '1',
+      from: 'direct'
+    }
+  })
 }
 
-// 组件挂载时获取数据
+const goToProductDetail = (productId: number) => {
+  router.push(`/products/${productId}`)
+}
+
+const handleSearch = () => {
+  currentPage.value = 1
+}
+
+const handleCategoryChange = () => {
+  currentPage.value = 1
+}
+
+const handleSort = () => {
+  currentPage.value = 1
+}
+
+const handleFeaturedFilter = () => {
+  currentPage.value = 1
+}
+
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
+}
+
+const handleCurrentChange = (page: number) => {
+  currentPage.value = page
+}
+
+// 定时刷新
+const refreshInterval = ref(null)
+
+// 启动定时刷新
+const startAutoRefresh = () => {
+  refreshInterval.value = setInterval(() => {
+    fetchProducts()
+    console.log('🔄 自动刷新商品数据')
+  }, 30000) // 每30秒刷新一次
+}
+
+// 停止定时刷新
+const stopAutoRefresh = () => {
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value)
+    refreshInterval.value = null
+  }
+}
+
+// 手动刷新
+const manualRefresh = () => {
+  fetchProducts()
+  ElMessage.success('商品数据已刷新')
+}
+
+// 生命周期
 onMounted(() => {
   fetchProducts()
-  fetchCommonProducts()
+  startAutoRefresh()
+})
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  stopAutoRefresh()
 })
 </script>
 
 <style scoped>
-.products {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.products-content {
+.products-page {
   max-width: 1200px;
   margin: 0 auto;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  padding: 20px;
+  background-color: #f5f7fa;
 }
 
-.products-header {
-  padding: 30px;
-  border-bottom: 1px solid #eee;
-}
-
-.products-header h2 {
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 28px;
-}
-
-.products-header p {
-  color: #666;
-  margin-bottom: 20px;
-}
-
-.search-filters {
+.page-header {
   display: flex;
-  gap: 15px;
-  margin-top: 20px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  color: white;
 }
 
-.search-input {
-  flex: 1;
-  max-width: 400px;
+.header-content h1 {
+  margin: 0 0 8px 0;
+  font-size: 2.5em;
+  font-weight: 700;
 }
 
-.category-select {
-  width: 200px;
+.header-content p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 1.1em;
 }
 
-.category-tabs {
-  padding: 0 30px;
-  margin-bottom: 20px;
+.header-stats {
+  text-align: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-number {
+  font-size: 2em;
+  font-weight: bold;
+  color: #FFD700;
+}
+
+.stat-label {
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.filter-section {
+  margin-bottom: 30px;
+}
+
+.filter-section .el-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  padding: 0 30px 30px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
 }
 
 .product-card {
-  cursor: pointer;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  height: fit-content;
+  cursor: pointer;
 }
 
 .product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
 .product-image {
@@ -418,209 +481,147 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image img {
+  transform: scale(1.05);
 }
 
 .product-badges {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  left: 12px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .badge {
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.75em;
+  font-weight: 600;
   color: white;
 }
 
 .badge.featured {
-  background-color: #f56c6c;
+  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
 }
 
-.badge.discount {
-  background-color: #e6a23c;
+.badge.active {
+  background: linear-gradient(45deg, #51cf66, #40c057);
 }
 
 .product-info {
-  padding: 15px;
+  padding: 20px;
+}
+
+.product-category {
+  font-size: 0.8em;
+  color: #667eea;
+  font-weight: 600;
+  margin-bottom: 8px;
 }
 
 .product-name {
-  font-size: 16px;
+  margin: 0 0 8px 0;
+  font-size: 1.2em;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.product-description {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 10px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  color: #2d3748;
   line-height: 1.4;
 }
 
-.product-features {
-  margin-bottom: 10px;
+.product-description {
+  margin: 0 0 12px 0;
+  color: #718096;
+  font-size: 0.9em;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-stock {
   display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-
-.product-specs {
-  margin-bottom: 10px;
-  font-size: 12px;
-  color: #999;
-}
-
-.spec {
-  margin-right: 10px;
-}
-
-.product-meta {
+  align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: #999;
 }
 
-.product-rating {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.stock-label {
+  font-size: 0.85em;
+  color: #718096;
 }
 
-.review-count {
-  margin-left: 5px;
+.stock-value {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #48bb78;
+}
+
+.stock-value.low-stock {
+  color: #f56565;
 }
 
 .product-price {
-  margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .current-price {
-  color: #f56c6c;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.original-price {
-  color: #999;
-  text-decoration: line-through;
-  font-size: 14px;
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #e53e3e;
 }
 
 .product-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .product-actions .el-button {
   flex: 1;
-}
-
-.empty-state {
-  padding: 60px 30px;
-  text-align: center;
-}
-
-.load-more {
-  padding: 30px;
-  text-align: center;
-}
-
-/* 常用产品样式 */
-.common-products {
-  margin: 30px 0;
-  padding: 20px;
-  background: #f8f9fa;
   border-radius: 8px;
 }
 
-.common-products h3 {
-  margin: 0 0 15px 0;
-  color: #333;
-  font-size: 18px;
-}
-
-.common-products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 15px;
-}
-
-.common-product-card {
-  background: white;
-  border-radius: 6px;
-  padding: 10px;
-  cursor: pointer;
-  transition: transform 0.2s;
+.empty-state {
   text-align: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 60px 20px;
 }
 
-.common-product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+.pagination-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid #e2e8f0;
 }
 
-.common-product-card img {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-
-.common-product-card .product-name {
-  font-size: 12px;
-  color: #333;
-  margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.common-product-card .product-price {
-  font-size: 14px;
-  color: #f56c6c;
-  font-weight: 600;
-}
-
+/* 响应式设计 */
 @media (max-width: 768px) {
+  .products-page {
+    padding: 15px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 20px;
+  }
+
+  .filter-section .el-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .filter-section .el-col {
+    width: 100% !important;
+  }
+
   .products-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 15px;
-    padding: 0 15px 20px;
-  }
-  
-  .search-filters {
-    flex-direction: column;
-  }
-  
-  .search-input,
-  .category-select {
-    max-width: none;
-    width: 100%;
-  }
-  
-  .product-actions {
-    flex-direction: column;
+    gap: 16px;
   }
 }
 </style>

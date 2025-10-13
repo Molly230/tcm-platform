@@ -4,20 +4,7 @@
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional, List
 from datetime import datetime
-from enum import Enum
-
-class UserRole(str, Enum):
-    USER = "user"
-    VIP = "vip"
-    DOCTOR = "doctor"
-    ADMIN = "admin"
-    SUPER_ADMIN = "super_admin"
-
-class UserStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    SUSPENDED = "suspended"
-    BANNED = "banned"
+from app.core.enums_v2 import UserRole, UserStatus
 
 # 用户注册
 class UserRegister(BaseModel):
@@ -120,21 +107,39 @@ class User(UserBase):
     status: UserStatus
     is_active: bool
     is_verified: bool
-    is_phone_verified: bool
+    is_phone_verified: Optional[bool] = None
     is_admin: bool = False
     is_super_admin: bool = False
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
+    class Config:
+        use_enum_values = True  # 使用枚举的值而不是名称
+        from_attributes = True  # 从SQLAlchemy模型读取
+
+    @validator('is_admin', always=True)
+    def compute_is_admin(cls, v, values):
+        role = values.get('role')
+        return role in [UserRole.ADMIN, UserRole.SUPER_ADMIN] if role else False
+    
+    @validator('is_super_admin', always=True)
+    def compute_is_super_admin(cls, v, values):
+        role = values.get('role')
+        return role == UserRole.SUPER_ADMIN if role else False
 
     class Config:
         from_attributes = True
 
 # 用户详细信息（包含敏感信息）
 class UserDetail(User):
-    is_superuser: bool
-    is_admin: bool
-    is_super_admin: bool
+    is_superuser: bool = False
+    
+    @validator('is_superuser', always=True)
+    def compute_is_superuser(cls, v, values):
+        # is_superuser 与 is_super_admin 相同
+        role = values.get('role')
+        return role == UserRole.SUPER_ADMIN if role else False
 
 # 用户列表项
 class UserListItem(BaseModel):

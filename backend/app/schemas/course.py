@@ -4,21 +4,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
-from enum import Enum
-
-class CourseCategory(str, Enum):
-    BASIC = "basic"
-    SEASONAL = "seasonal"
-    DIET = "diet"
-    MASSAGE = "massage"
-    HERB = "herb"
-    DISEASE_FOCUSED = "逐病精讲"  # 逐病精讲分类
-    COMPREHENSIVE = "全面学医"   # 全面学医分类
-
-class VideoStatus(str, Enum):
-    PROCESSING = "processing"
-    READY = "ready"
-    ERROR = "error"
+from app.core.enums_v2 import CourseCategory, VideoStatus
 
 class CourseBase(BaseModel):
     title: str

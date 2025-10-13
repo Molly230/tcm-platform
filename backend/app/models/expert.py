@@ -5,29 +5,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Enum, Boo
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
-import enum
-
-class ExpertCategory(str, enum.Enum):
-    INTERNAL = "internal"  # 中医内科
-    GYNECOLOGY = "gynecology"  # 中医妇科
-    PEDIATRICS = "pediatrics"  # 中医儿科
-    ACUPUNCTURE = "acupuncture"  # 针灸推拿
-    HEALTH = "health"  # 中医养生
-    TRADITIONAL_CHINESE_MEDICINE = "tcm"  # 传统中医
-    ORTHOPEDICS = "orthopedics"  # 中医骨科
-    DERMATOLOGY = "dermatology"  # 中医皮肤科
-
-class ExpertLevel(str, enum.Enum):
-    JUNIOR = "junior"  # 初级医师
-    INTERMEDIATE = "intermediate"  # 中级医师
-    SENIOR = "senior"  # 高级医师
-    CHIEF = "chief"  # 主任医师
-
-class ExpertStatus(str, enum.Enum):
-    ACTIVE = "active"  # 在线
-    BUSY = "busy"  # 忙碌
-    OFFLINE = "offline"  # 离线
-    ON_VACATION = "on_vacation"  # 休假
+from app.core.enums_v2 import ExpertCategory, ExpertLevel, ExpertStatus, AuditStatus
 
 class Expert(Base):
     __tablename__ = "experts"
@@ -67,7 +45,7 @@ class Expert(Base):
     response_time = Column(Integer, default=30)  # 平均响应时间（分钟）
     
     # 状态
-    status = Column(Enum(ExpertStatus), default=ExpertStatus.OFFLINE)
+    status = Column(Enum(ExpertStatus), default=ExpertStatus.INACTIVE)
     is_active = Column(Boolean, default=True)  # 是否启用
     is_verified = Column(Boolean, default=False)  # 是否认证
     is_featured = Column(Boolean, default=False)  # 是否推荐专家
@@ -81,6 +59,14 @@ class Expert(Base):
     personal_statement = Column(Text)  # 个人陈述
     treatment_philosophy = Column(Text)  # 治疗理念
     successful_cases = Column(Text)  # 成功案例
+    
+    # 审核相关字段
+    audit_status = Column(Enum(AuditStatus), default=AuditStatus.DRAFT)  # 审核状态
+    submitted_by = Column(String)  # 提交人
+    submitted_at = Column(DateTime(timezone=True))  # 提交时间
+    reviewed_by = Column(String)  # 审核人
+    reviewed_at = Column(DateTime(timezone=True))  # 审核时间
+    audit_notes = Column(Text)  # 审核备注
     
     # 时间字段
     last_online = Column(DateTime(timezone=True))

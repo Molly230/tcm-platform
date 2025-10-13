@@ -3,7 +3,7 @@
     <PageContainer>
       <template #breadcrumb>
         <el-breadcrumb separator="/">
-          <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+          <el-breadcrumb-item :to="{ path: '/' }">方案</el-breadcrumb-item>
           <el-breadcrumb-item :to="{ path: '/courses' }">课程中心</el-breadcrumb-item>
           <el-breadcrumb-item>{{ course?.title }}</el-breadcrumb-item>
         </el-breadcrumb>

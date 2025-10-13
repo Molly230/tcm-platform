@@ -41,13 +41,13 @@
           @change="handleFilter"
         >
           <el-option label="全部分类" value="" />
-          <el-option label="基础理论" value="basic" />
-          <el-option label="四季养生" value="seasonal" />
-          <el-option label="食疗养生" value="diet" />
-          <el-option label="按摩推拿" value="massage" />
-          <el-option label="中草药" value="herb" />
-          <el-option label="逐病精讲" value="逐病精讲" />
-          <el-option label="全面学医" value="全面学医" />
+          <el-option label="理论基础" value="THEORY" />
+          <el-option label="临床实践" value="CLINICAL" />
+          <el-option label="养生保健" value="WELLNESS" />
+          <el-option label="针灸推拿" value="ACUPUNCTURE" />
+          <el-option label="中药方剂" value="PHARMACY" />
+          <el-option label="逐病精讲" value="DISEASE_SPECIFIC" />
+          <el-option label="全面学医" value="COMPREHENSIVE" />
         </el-select>
         
         <el-select
@@ -351,13 +351,13 @@
         
         <el-form-item label="课程分类" prop="category">
           <el-select v-model="courseForm.category" style="width: 100%" placeholder="请选择分类">
-            <el-option label="基础理论" value="basic" />
-            <el-option label="四季养生" value="seasonal" />
-            <el-option label="食疗养生" value="diet" />
-            <el-option label="按摩推拿" value="massage" />
-            <el-option label="中草药" value="herb" />
-            <el-option label="逐病精讲" value="逐病精讲" />
-            <el-option label="全面学医" value="全面学医" />
+            <el-option label="理论基础" value="THEORY" />
+            <el-option label="临床实践" value="CLINICAL" />
+            <el-option label="养生保健" value="WELLNESS" />
+            <el-option label="针灸推拿" value="ACUPUNCTURE" />
+            <el-option label="中药方剂" value="PHARMACY" />
+            <el-option label="逐病精讲" value="DISEASE_SPECIFIC" />
+            <el-option label="全面学医" value="COMPREHENSIVE" />
           </el-select>
         </el-form-item>
         
@@ -544,7 +544,7 @@ const uploadHeaders = computed(() => ({
 const courseForm = ref({
   title: '',
   description: '',
-  category: 'basic',
+  category: 'THEORY',
   instructor: '',
   price: 0,
   is_free: true,
@@ -585,54 +585,26 @@ const paginatedCourses = computed(() => {
 const loadCourses = async () => {
   try {
     loading.value = true
-    const response = await fetch('/api/admin/courses', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
-    })
-    
+    // 直接使用公共API，不需要管理员认证
+    const response = await fetch('/api/courses/?limit=100')
+
     if (response.ok) {
       courses.value = await response.json()
       filteredCourses.value = courses.value
     } else {
-      // 使用模拟数据
-      courses.value = generateMockCourses()
-      filteredCourses.value = courses.value
+      // 加载失败时显示空列表
+      courses.value = []
+      filteredCourses.value = []
+      ElMessage.warning('无法加载课程列表')
     }
   } catch (error) {
     console.error('加载课程失败:', error)
-    ElMessage.error('加载课程失败')
-    // 使用模拟数据
-    courses.value = generateMockCourses()
-    filteredCourses.value = courses.value
+    ElMessage.error('加载课程失败，请检查网络连接')
+    courses.value = []
+    filteredCourses.value = []
   } finally {
     loading.value = false
   }
-}
-
-const generateMockCourses = () => {
-  const categories = ['basic', 'seasonal', 'diet', 'massage', 'herb', '逐病精讲', '全面学医']
-  const instructors = ['张医师', '李专家', '王教授', '赵老师', '陈医生']
-  const titles = [
-    '中医基础理论与实践', '四季养生之道', '食疗养生大全', 
-    '按摩推拿入门', '常用中草药识别', '经络穴位详解',
-    '中医诊断学', '针灸治疗法', '中药方剂学', '养生保健指南'
-  ]
-  
-  return Array.from({ length: 50 }, (_, i) => ({
-    id: i + 1,
-    title: titles[i % titles.length] + (i > 9 ? ` (${Math.floor(i/10) + 1})` : ''),
-    description: `这是一门专业的中医课程，主要讲解${titles[i % titles.length]}的相关知识和实践技能。`,
-    category: categories[i % categories.length],
-    instructor: instructors[i % instructors.length],
-    price: i % 3 === 0 ? 0 : Math.floor(Math.random() * 500) + 99,
-    is_free: i % 3 === 0,
-    image_url: `https://picsum.photos/300/200?random=${i}`,
-    is_published: i % 4 !== 0,
-    total_lessons: Math.floor(Math.random() * 20) + 5,
-    duration: Math.floor(Math.random() * 300) + 60,
-    enrollment_count: Math.floor(Math.random() * 1000) + 50,
-    created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
-    updated_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
-  }))
 }
 
 const refreshCourses = () => {
@@ -855,7 +827,16 @@ const saveCourse = async () => {
     if (error.name === 'ValidationError') {
       ElMessage.warning('请完善必填信息')
     } else {
-      ElMessage.error(`保存失败: ${error.message}`)
+      // 改进错误信息显示
+      let errorMsg = '保存失败'
+      if (error.message) {
+        errorMsg += `: ${error.message}`
+      } else if (typeof error === 'string') {
+        errorMsg += `: ${error}`
+      } else if (error.detail) {
+        errorMsg += `: ${error.detail}`
+      }
+      ElMessage.error(errorMsg)
     }
   } finally {
     saving.value = false
@@ -865,14 +846,34 @@ const saveCourse = async () => {
 const togglePublishStatus = async (course: any) => {
   const newStatus = !course.is_published
   const actionText = newStatus ? '发布' : '下架'
-  
+
+  const oldStatus = course.is_published
+
   try {
+    // 先更新本地状态（乐观更新）
     course.is_published = newStatus
+
+    // 调用后端API保存到数据库
+    const response = await fetch(`/api/courses/${course.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+      },
+      body: JSON.stringify({ is_published: newStatus })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || errorData.message || `${actionText}失败`)
+    }
+
     ElMessage.success(`课程${actionText}成功`)
-  } catch (error) {
-    ElMessage.error(`课程${actionText}失败`)
+  } catch (error: any) {
+    console.error(`课程${actionText}失败:`, error)
+    ElMessage.error(error.message || `课程${actionText}失败`)
     // 回滚状态
-    course.is_published = !newStatus
+    course.is_published = oldStatus
   }
 }
 
@@ -900,11 +901,27 @@ const handleDeleteCourse = async (courseId: number) => {
       type: 'warning'
     })
     
-    // 这里实现删除逻辑
+    // 调用删除API
+    const response = await fetch(`/api/admin/courses/${courseId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+      }
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || errorData.message || '删除失败')
+    }
+    
     ElMessage.success('课程删除成功')
-    await loadCourses()
-  } catch {
-    // 用户取消删除
+    await loadCourses()  // 重新加载课程列表
+  } catch (error) {
+    if (error.message && error.message !== 'cancel') {
+      // 显示删除错误，但排除用户取消的情况
+      ElMessage.error(`删除失败: ${error.message}`)
+    }
+    // 用户取消删除时不显示错误
   }
 }
 
@@ -1046,26 +1063,26 @@ const formatFileSize = (bytes: number) => {
 // 工具方法
 const getCategoryText = (category: string) => {
   const categoryMap = {
-    'basic': '基础理论',
-    'seasonal': '四季养生',
-    'diet': '食疗养生',
-    'massage': '按摩推拿',
-    'herb': '中草药',
-    '逐病精讲': '逐病精讲',
-    '全面学医': '全面学医'
+    'THEORY': '理论基础',
+    'CLINICAL': '临床实践',
+    'WELLNESS': '养生保健',
+    'ACUPUNCTURE': '针灸推拿',
+    'PHARMACY': '中药方剂',
+    'DISEASE_SPECIFIC': '逐病精讲',
+    'COMPREHENSIVE': '全面学医'
   }
   return categoryMap[category] || category
 }
 
 const getCategoryTagType = (category: string) => {
   const typeMap = {
-    'basic': 'primary',
-    'seasonal': 'success',
-    'diet': 'warning',
-    'massage': 'info',
-    'herb': 'danger',
-    '逐病精讲': 'success',
-    '全面学医': 'primary'
+    'THEORY': 'primary',
+    'CLINICAL': 'success',
+    'WELLNESS': 'warning',
+    'ACUPUNCTURE': 'info',
+    'PHARMACY': 'danger',
+    'DISEASE_SPECIFIC': '',
+    'COMPREHENSIVE': 'primary'
   }
   return typeMap[category] || 'info'
 }
@@ -1106,7 +1123,7 @@ const resetCourseForm = () => {
   courseForm.value = {
     title: '',
     description: '',
-    category: 'basic',
+    category: 'THEORY',
     instructor: '',
     price: 0,
     is_free: true,

@@ -1,297 +1,249 @@
 <template>
   <div class="courses">
-    <PageContainer>
-      
-      <div class="courses-content" v-loading="loading">
-        <div class="course-philosophy">
-          <h1 class="philosophy-title">重构你的健康认知</h1>
-        </div>
-        
-        
-        <el-tabs v-model="activeTab" class="courses-tabs">
-          <el-tab-pane label="全部课程" name="all">
-            <div class="courses-grid">
-              <el-card class="course-card" v-for="course in allCourses" :key="course.id">
-                <img :src="course.image" :alt="course.title" class="course-image">
-                <div class="course-info">
-                  <h3>{{ course.title }}</h3>
-                  <p class="course-description">{{ course.description }}</p>
-                  <p class="course-instructor" v-if="course.instructor">
-                    <el-icon><User /></el-icon>
-                    {{ course.instructor }}
-                  </p>
-                  <div class="course-meta">
-                    <span class="course-duration">{{ course.duration }}</span>
-                    <span class="course-price">{{ course.is_free ? '免费' : `¥${course.price}` }}</span>
-                    <span class="course-category">{{ getCategoryName(course.category) }}</span>
-                  </div>
-                  <el-button type="primary" @click="enrollCourse(course.id)">立即学习</el-button>
-                </div>
-              </el-card>
-            </div>
-            <div v-if="allCourses.length === 0 && !loading" class="no-courses">
-              <p>暂无课程数据</p>
-            </div>
-          </el-tab-pane>
-          
-          <el-tab-pane label="中医基础" name="basic">
-            <div class="category-intro">
-              <h2>中医基础理论</h2>
-              <p>从阴阳五行到脏腑经络，奠定中医思维基础</p>
-            </div>
-            <div class="courses-grid">
-              <el-card class="course-card" v-for="course in basicCourses" :key="course.id">
-                <img :src="course.image" :alt="course.title" class="course-image">
-                <div class="course-info">
-                  <h3>{{ course.title }}</h3>
-                  <p class="course-description">{{ course.description }}</p>
-                  <p class="course-instructor" v-if="course.instructor">
-                    <el-icon><User /></el-icon>
-                    {{ course.instructor }}
-                  </p>
-                  <div class="course-meta">
-                    <span class="course-duration">{{ course.duration }}</span>
-                    <span class="course-price">{{ course.is_free ? '免费' : `¥${course.price}` }}</span>
-                  </div>
-                  <el-button type="primary" @click="enrollCourse(course.id)">立即学习</el-button>
-                </div>
-              </el-card>
-            </div>
-            <div v-if="basicCourses.length === 0 && !loading" class="no-courses">
-              <p>暂无中医基础课程</p>
-            </div>
-          </el-tab-pane>
-          
-          
-          <el-tab-pane label="逐病精讲" name="disease-focused">
-            <div class="category-intro featured">
-              <h2>逐病精讲专题</h2>
-              <p>针对常见疾病，深入讲解中医诊治思路</p>
-            </div>
-            <div class="courses-grid">
-              <el-card class="course-card" v-for="course in diseaseFocusedCourses" :key="course.id">
-                <img :src="course.image" :alt="course.title" class="course-image">
-                <div class="course-info">
-                  <h3>{{ course.title }}</h3>
-                  <p class="course-description">{{ course.description }}</p>
-                  <p class="course-instructor" v-if="course.instructor">
-                    <el-icon><User /></el-icon>
-                    {{ course.instructor }}
-                  </p>
-                  <div class="course-meta">
-                    <span class="course-duration">{{ course.duration }}</span>
-                    <span class="course-price">{{ course.is_free ? '免费' : `¥${course.price}` }}</span>
-                  </div>
-                  <el-button type="primary" @click="enrollCourse(course.id)">立即学习</el-button>
-                </div>
-              </el-card>
-            </div>
-            <div v-if="diseaseFocusedCourses.length === 0 && !loading" class="no-courses">
-              <p>暂无逐病精讲课程</p>
-            </div>
-          </el-tab-pane>
-          
-          <el-tab-pane label="全面学医" name="comprehensive">
-            <div class="category-intro featured">
-              <h2>全面学医系统</h2>
-              <p>系统性中医学习，从入门到精通的完整体系</p>
-            </div>
-            <div class="courses-grid">
-              <el-card class="course-card" v-for="course in comprehensiveCourses" :key="course.id">
-                <img :src="course.image" :alt="course.title" class="course-image">
-                <div class="course-info">
-                  <h3>{{ course.title }}</h3>
-                  <p class="course-description">{{ course.description }}</p>
-                  <p class="course-instructor" v-if="course.instructor">
-                    <el-icon><User /></el-icon>
-                    {{ course.instructor }}
-                  </p>
-                  <div class="course-meta">
-                    <span class="course-duration">{{ course.duration }}</span>
-                    <span class="course-price">{{ course.is_free ? '免费' : `¥${course.price}` }}</span>
-                  </div>
-                  <el-button type="primary" @click="enrollCourse(course.id)">立即学习</el-button>
-                </div>
-              </el-card>
-            </div>
-            <div v-if="comprehensiveCourses.length === 0 && !loading" class="no-courses">
-              <p>暂无全面学医课程</p>
-            </div>
-          </el-tab-pane>
-          
-          <el-tab-pane label="免费体验" name="free">
-            <div class="category-intro special">
-              <h2>免费课程体验</h2>
-              <p>精选免费课程，让您先体验中医学习的魅力</p>
-            </div>
-            <div class="courses-grid">
-              <el-card class="course-card" v-for="course in freeCourses" :key="course.id">
-                <img :src="course.image" :alt="course.title" class="course-image">
-                <div class="course-info">
-                  <h3>{{ course.title }}</h3>
-                  <p class="course-description">{{ course.description }}</p>
-                  <p class="course-instructor" v-if="course.instructor">
-                    <el-icon><User /></el-icon>
-                    {{ course.instructor }}
-                  </p>
-                  <div class="course-meta">
-                    <span class="course-duration">{{ course.duration }}</span>
-                    <span class="course-price">免费</span>
-                    <span class="course-category">{{ getCategoryName(course.category) }}</span>
-                  </div>
-                  <el-button type="primary" @click="enrollCourse(course.id)">立即学习</el-button>
-                </div>
-              </el-card>
-            </div>
-            <div v-if="freeCourses.length === 0 && !loading" class="no-courses">
-              <p>暂无免费课程</p>
-            </div>
-          </el-tab-pane>
-        </el-tabs>
+
+    <!-- 核心理念 -->
+    <section class="core-philosophy">
+      <div class="section-header">
+        <span class="section-tag">Health Cognition</span>
+        <h2>认知决定健康，让每个人成为健康管理专家</h2>
       </div>
-    </PageContainer>
+
+      <!-- 左右布局：方法论卡片 + 4个步骤 -->
+      <div class="methodology-layout">
+        <!-- 左侧：方法论卡片（可点击跳转） -->
+        <div class="insight-card clickable" @click="goToThreeLayerSystem">
+          <div class="insight-icon">🔬</div>
+          <p>用培训医生的专业体系，让普通人掌握健康管理技能</p>
+          <div class="click-hint">点击了解详情 →</div>
+        </div>
+
+        <!-- 右侧：16字步骤 -->
+        <div class="steps-compact">
+          <div class="step-compact">医生思维</div>
+          <div class="step-compact">案例驱动</div>
+          <div class="step-compact">工具应用</div>
+          <div class="step-compact">个性指导</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 课程展示区域 -->
+    <section class="courses-section">
+      <div class="container">
+        <!-- 加载状态 -->
+        <div v-if="loading" class="loading-state">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          <p>加载课程中...</p>
+        </div>
+
+        <!-- 书签式系列卡片 -->
+        <div v-else-if="allCourses.length > 0">
+          <div class="series-bookmarks">
+            <!-- 基础理论书签 -->
+            <div
+              class="bookmark-card"
+              :class="{ active: activeSeriesIndex === 0, 'has-courses': courseSeries.theory.length > 0 }"
+              @click="toggleSeries(0)"
+            >
+              <div class="bookmark-icon">📚</div>
+              <div class="bookmark-content">
+                <h3>基础理论</h3>
+                <p>系统学习中医理论基础、中药方剂知识</p>
+                <div class="bookmark-count">{{ courseSeries.theory.length }} 门课程</div>
+              </div>
+              <div class="bookmark-arrow" v-if="activeSeriesIndex === 0">▼</div>
+            </div>
+
+            <!-- 实操演示书签 -->
+            <div
+              class="bookmark-card"
+              :class="{ active: activeSeriesIndex === 1, 'has-courses': courseSeries.practical.length > 0 }"
+              @click="toggleSeries(1)"
+            >
+              <div class="bookmark-icon">🎯</div>
+              <div class="bookmark-content">
+                <h3>实操演示</h3>
+                <p>临床实践、养生保健、针灸推拿实操技能</p>
+                <div class="bookmark-count">{{ courseSeries.practical.length }} 门课程</div>
+              </div>
+              <div class="bookmark-arrow" v-if="activeSeriesIndex === 1">▼</div>
+            </div>
+
+            <!-- 逐病精讲书签 -->
+            <div
+              class="bookmark-card"
+              :class="{ active: activeSeriesIndex === 2, 'has-courses': courseSeries.disease.length > 0 }"
+              @click="toggleSeries(2)"
+            >
+              <div class="bookmark-icon">💊</div>
+              <div class="bookmark-content">
+                <h3>逐病精讲</h3>
+                <p>针对具体疾病的深度讲解和调理方案</p>
+                <div class="bookmark-count">{{ courseSeries.disease.length }} 门课程</div>
+              </div>
+              <div class="bookmark-arrow" v-if="activeSeriesIndex === 2">▼</div>
+            </div>
+
+            <!-- 全面学医书签 -->
+            <div
+              class="bookmark-card"
+              :class="{ active: activeSeriesIndex === 3, 'has-courses': courseSeries.comprehensive.length > 0 }"
+              @click="toggleSeries(3)"
+            >
+              <div class="bookmark-icon">🎓</div>
+              <div class="bookmark-content">
+                <h3>全面学医</h3>
+                <p>系统全面的中医学习体系</p>
+                <div class="bookmark-count">{{ courseSeries.comprehensive.length }} 门课程</div>
+              </div>
+              <div class="bookmark-arrow" v-if="activeSeriesIndex === 3">▼</div>
+            </div>
+          </div>
+
+          <!-- 课程展示区域 -->
+          <transition name="fade">
+            <div v-if="activeSeriesIndex !== null && currentSeriesCourses.length > 0" class="courses-display">
+              <div class="course-grid">
+                <div v-for="course in currentSeriesCourses" :key="course.id" class="course-card" @click="goToCourseDetail(course.id)">
+                  <div class="course-image">
+                    <img :src="course.image_url || '/default-course.jpg'" :alt="course.title">
+                    <span v-if="course.is_free" class="free-badge">免费</span>
+                    <span v-else class="price-badge">¥{{ course.price }}</span>
+                  </div>
+                  <div class="course-info">
+                    <h4>{{ course.title }}</h4>
+                    <p class="course-desc">{{ course.description }}</p>
+                    <div class="course-meta">
+                      <span><el-icon><User /></el-icon> {{ course.instructor || '巫闪闪' }}</span>
+                      <span><el-icon><Clock /></el-icon> {{ course.total_lessons }}课时</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </div>
+
+        <!-- 无课程提示 -->
+        <div v-else class="no-courses">
+          <el-icon><Warning /></el-icon>
+          <p>暂无课程，敬请期待...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 巫闪闪个人签名 -->
+    <div class="wushanshan-signature">
+      <div class="signature-content">
+        <p>💫 <strong>我是巫闪闪，让健康触手可及，让生命闪闪发光</strong></p>
+        <p>人人都有机会健康 ✨</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import PageContainer from '../components/PageContainer.vue'
-import { PLACEHOLDER_IMAGES } from '@/utils/placeholder'
+import { Loading, User, Clock, Warning } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
-// 定义响应式数据
-const activeTab = ref('all')
-const allCourses = ref([])
-const loading = ref(true)
+// 响应式数据
+const loading = ref(false)
+const allCourses = ref<any[]>([])
+const activeSeriesIndex = ref<number | null>(null)
 
-// 计算属性用于筛选课程
-const basicCourses = computed(() => allCourses.value.filter(course => course.category === 'basic'))
-const diseaseFocusedCourses = computed(() => allCourses.value.filter(course => course.category === '逐病精讲'))
-const comprehensiveCourses = computed(() => allCourses.value.filter(course => course.category === '全面学医'))
-const freeCourses = computed(() => allCourses.value.filter(course => course.is_free))
-
-// 分类名称映射
-const getCategoryName = (category: string) => {
-  const categoryMap = {
-    'basic': '中医基础',
-    'seasonal': '四季养生', 
-    'diet': '药膳食疗',
-    'massage': '推拿按摩',
-    'herb': '本草方剂',
-    '逐病精讲': '逐病精讲',
-    '全面学医': '全面学医'
+// 课程分类映射
+const courseSeries = computed(() => {
+  return {
+    // 基础理论：理论基础 + 中药方剂
+    theory: allCourses.value.filter(course =>
+      ['THEORY', 'PHARMACY'].includes(course.category)
+    ),
+    // 实操演示：临床实践 + 养生保健 + 针灸推拿
+    practical: allCourses.value.filter(course =>
+      ['CLINICAL', 'WELLNESS', 'ACUPUNCTURE'].includes(course.category)
+    ),
+    // 逐病精讲
+    disease: allCourses.value.filter(course =>
+      course.category === 'DISEASE_SPECIFIC'
+    ),
+    // 全面学医
+    comprehensive: allCourses.value.filter(course =>
+      course.category === 'COMPREHENSIVE'
+    )
   }
-  return categoryMap[category] || category
-}
+})
 
-// 获取课程数据
-const fetchCourses = async () => {
-  loading.value = true
-  
-  try {
-    console.log('🚀 开始获取课程数据...')
-    
-    // 添加缓存破坏参数和更详细的日志
-    const url = `/api/courses/?t=${Date.now()}`
-    console.log('📡 请求URL:', url)
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      cache: 'no-cache'
-    })
-    
-    console.log('📈 响应状态:', response.status)
-    console.log('📈 响应状态文本:', response.statusText) 
-    console.log('✅ response.ok:', response.ok)
-    
-    if (response.status !== 200) {
-      const errorText = await response.text()
-      console.error('❌ 服务器错误响应:', errorText)
-      throw new Error(`服务器返回 ${response.status}`)
-    }
-    
-    const rawText = await response.text()
-    console.log('📄 原始响应前100字符:', rawText.substring(0, 100))
-    
-    let courses
-    try {
-      courses = JSON.parse(rawText)
-      console.log('✅ JSON解析成功，课程数量:', courses.length)
-    } catch (jsonError) {
-      console.error('❌ JSON解析失败:', jsonError)
-      console.error('❌ 响应内容:', rawText)
-      throw new Error('服务器返回的数据格式错误')
-    }
-    
-    if (!Array.isArray(courses)) {
-      console.error('❌ 返回的不是数组:', typeof courses)
-      throw new Error('课程数据格式不正确')
-    }
-    
-    // 处理课程数据
-    const processedCourses = courses.map((course, index) => {
-      console.log(`🔄 处理第${index + 1}门课程:`, course.title)
-      return {
-        id: course.id,
-        title: course.title,
-        description: course.description,
-        category: course.category,
-        duration: `${course.total_lessons}课时`,
-        price: course.is_free ? 0 : course.price,
-        image: course.image_url || PLACEHOLDER_IMAGES.course,
-        instructor: course.instructor,
-        total_lessons: course.total_lessons,
-        is_free: course.is_free
-      }
-    })
-    
-    allCourses.value = processedCourses
-    console.log('🎉 课程数据加载完成！总数:', processedCourses.length)
-    
-    // 显示成功消息
-    if (processedCourses.length > 0) {
-      ElMessage.success(`成功加载 ${processedCourses.length} 门课程`)
-    }
-    
-  } catch (error) {
-    console.error('💥 获取课程失败:', error)
-    console.error('📋 错误详情:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    })
-    
-    // 显示用户友好的错误消息
-    ElMessage.error(`课程加载失败: ${error.message}`)
-    
-    // 设置空数组避免页面崩溃
-    allCourses.value = []
-    
-  } finally {
-    loading.value = false
-    console.log('⏹️ 课程加载流程结束')
+// 当前选中系列的课程
+const currentSeriesCourses = computed(() => {
+  if (activeSeriesIndex.value === null) return []
+  const seriesMap = [
+    courseSeries.value.theory,
+    courseSeries.value.practical,
+    courseSeries.value.disease,
+    courseSeries.value.comprehensive
+  ]
+  return seriesMap[activeSeriesIndex.value] || []
+})
+
+// 切换系列
+const toggleSeries = (index: number) => {
+  if (activeSeriesIndex.value === index) {
+    activeSeriesIndex.value = null
+  } else {
+    activeSeriesIndex.value = index
   }
 }
 
-// 查看课程详情
-const viewCourse = (courseId: number) => {
+// 跳转到三层体系详情页
+const goToThreeLayerSystem = () => {
+  router.push('/three-layer-system')
+}
+
+// 跳转到课程详情页
+const goToCourseDetail = (courseId: number) => {
   router.push(`/courses/${courseId}`)
 }
 
-// 为了保持兼容性，保留原方法  
-const enrollCourse = (courseId: number) => {
-  viewCourse(courseId)
+// 获取课程列表
+const fetchCourses = async () => {
+  loading.value = true
+  try {
+    // 直接使用fetch因为后端返回的是数组而非标准API响应格式
+    const response = await fetch('/api/courses/?limit=100')
+    const data = await response.json()
+
+    if (Array.isArray(data)) {
+      // 只显示已发布的课程
+      allCourses.value = data.filter((course: any) => course.is_published)
+      console.log('已加载课程数量:', allCourses.value.length)
+
+      // 默认展开第一个有课程的系列
+      if (courseSeries.value.theory.length > 0) {
+        activeSeriesIndex.value = 0
+      } else if (courseSeries.value.practical.length > 0) {
+        activeSeriesIndex.value = 1
+      } else if (courseSeries.value.disease.length > 0) {
+        activeSeriesIndex.value = 2
+      } else if (courseSeries.value.comprehensive.length > 0) {
+        activeSeriesIndex.value = 3
+      }
+    } else {
+      console.error('API返回格式异常:', data)
+      ElMessage.warning('获取课程列表格式异常')
+    }
+  } catch (error) {
+    console.error('获取课程列表失败:', error)
+    ElMessage.error('获取课程列表失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
 }
 
-// 挂载时获取课程数据
+// 页面加载时获取课程
 onMounted(() => {
   fetchCourses()
 })
@@ -303,253 +255,478 @@ onMounted(() => {
   background-color: #f5f5f5;
 }
 
-.courses-content {
-  background-color: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-
-/* 健康哲学标题区域 */
-.course-philosophy {
-  text-align: center;
-  margin-bottom: 40px;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 15px;
-  color: white;
-  position: relative;
-  overflow: hidden;
-}
-
-.course-philosophy::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 30% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-}
-
-.philosophy-title {
-  font-size: 3rem;
-  font-weight: 800;
-  margin-bottom: 1rem;
-  position: relative;
-  z-index: 1;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  letter-spacing: -1px;
-}
-
-.philosophy-subtitle {
-  font-size: 1.5rem;
-  font-weight: 400;
-  opacity: 0.95;
-  position: relative;
-  z-index: 1;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-  line-height: 1.4;
-  max-width: 600px;
+/* 核心理念section样式 */
+.core-philosophy {
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 80px 60px;
+  background: rgba(255, 255, 255, 0.95);
 }
 
-/* 健康误区引言 */
-.misconceptions-intro {
+.section-header {
   text-align: center;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  border-radius: 15px;
+  margin-bottom: 80px;
+  position: relative;
+}
+
+.section-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
-  margin-bottom: 40px;
-  position: relative;
-  overflow: hidden;
-}
-
-.misconceptions-intro::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  opacity: 0.3;
-}
-
-.intro-title {
-  position: relative;
-  z-index: 1;
-  font-size: 2.5rem;
+  padding: 12px 32px;
+  border-radius: 30px;
+  font-size: 0.85rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 32px;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.section-header h2 {
+  font-size: 3.2rem;
+  color: #1a202c;
+  margin-bottom: 24px;
+  font-weight: 800;
   line-height: 1.2;
-  margin-bottom: 2rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #2d3748, #4a5568);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.intro-title .highlight {
-  color: #ff6b6b;
-  text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
-  font-weight: 900;
+/* 方法论左右布局 */
+.methodology-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 40px;
+  align-items: center;
 }
 
-.intro-subtitle {
-  position: relative;
-  z-index: 1;
-  font-size: 1.3rem;
-  opacity: 0.95;
-  line-height: 1.5;
-  margin: 0;
-  font-weight: 300;
-}
-
-.intro-subtitle strong {
-  color: #ffd93d;
-  font-weight: 700;
-  font-size: 1.1em;
-  text-shadow: 0 0 15px rgba(255, 217, 61, 0.3);
-}
-
-/* 分类介绍样式 */
-.category-intro {
+.insight-card {
+  background: white;
+  border-radius: 20px;
+  padding: 50px 40px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
   text-align: center;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.insight-card:hover {
+  transform: translateY(-10px);
+}
+
+.click-hint {
+  margin-top: 15px;
+  color: #667eea;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.insight-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.insight-card p {
+  font-size: 1.1rem;
+  color: #4a5568;
+  line-height: 1.6;
+}
+
+/* 右侧16字步骤 */
+.steps-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.step-compact {
+  background: white;
   padding: 30px 20px;
-  margin-bottom: 30px;
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
   border-radius: 12px;
-  color: white;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2d3748;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.step-compact:hover {
+  transform: translateY(-8px);
+  border-color: #667eea;
+  box-shadow: 0 15px 35px rgba(102, 126, 234, 0.2);
+}
+
+/* 课程展示区域 */
+.courses-section {
+  background: #f5f5f5;
+  padding: 60px 0;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* 加载状态 */
+.loading-state {
+  text-align: center;
+  padding: 60px 0;
+}
+
+.loading-state .el-icon {
+  font-size: 48px;
+  color: #409EFF;
+  margin-bottom: 15px;
+}
+
+.loading-state p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* 书签式系列卡片 */
+.series-bookmarks {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.bookmark-card {
+  background: white;
+  border-radius: 16px;
+  padding: 30px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 3px solid transparent;
   position: relative;
   overflow: hidden;
 }
 
-.category-intro::before {
+.bookmark-card::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  height: 6px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
 }
 
-.category-intro h2 {
-  position: relative;
-  z-index: 1;
-  font-size: 1.8rem;
-  font-weight: 600;
-  margin-bottom: 0.8rem;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+.bookmark-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
-.category-intro p {
-  position: relative;
-  z-index: 1;
-  font-size: 1.1rem;
-  opacity: 0.95;
-  margin: 0;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+.bookmark-card:hover::before {
+  transform: scaleX(1);
 }
 
-.category-intro.featured {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+.bookmark-card.active {
+  border-color: #667eea;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  transform: translateY(-4px);
 }
 
-.category-intro.special {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.bookmark-card.active::before {
+  transform: scaleX(1);
 }
 
-.course-category {
-  background-color: #f0f0f0;
+.bookmark-card:not(.has-courses) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bookmark-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.bookmark-content h3 {
+  font-size: 1.4rem;
+  color: #2d3748;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.bookmark-content p {
+  font-size: 0.9rem;
   color: #666;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  margin-left: 8px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  min-height: 2.8em;
 }
 
+.bookmark-count {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
 
+.bookmark-arrow {
+  margin-top: 15px;
+  color: #667eea;
+  font-size: 1.2rem;
+  font-weight: bold;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+}
+
+/* 课程展示区域 */
+.courses-display {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* 课程网格 */
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+}
+
+/* 课程卡片 */
 .course-card {
-  margin-bottom: 20px;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .course-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.12);
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .course-image {
+  position: relative;
   width: 100%;
-  height: 150px;
+  height: 200px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.course-image img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
+.free-badge, .price-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+}
+
+.free-badge {
+  background: #67C23A;
+}
+
+.price-badge {
+  background: #F56C6C;
+}
+
 .course-info {
-  padding: 15px 0;
+  padding: 20px;
 }
 
-.course-info h3 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 16px;
-}
-
-.course-description {
-  color: #666;
+.course-info h4 {
+  font-size: 1.3rem;
+  color: #2d3748;
   margin-bottom: 10px;
-  height: 40px;
+  font-weight: 700;
   overflow: hidden;
-  font-size: 14px;
-  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.course-instructor {
-  color: #888;
-  font-size: 12px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.course-desc {
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 3em;
 }
 
 .course-meta {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 15px;
-}
-
-.course-duration {
+  align-items: center;
   color: #999;
-  font-size: 12px;
+  font-size: 0.9rem;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
 }
 
-.course-price {
-  color: #f56c6c;
-  font-weight: bold;
+.course-meta span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.course-meta .el-icon {
   font-size: 14px;
 }
 
+/* 无课程状态 */
 .no-courses {
   text-align: center;
-  padding: 40px;
+  padding: 80px 20px;
   color: #999;
 }
 
-.el-button {
-  width: 100%;
+.no-courses .el-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  color: #C0C4CC;
 }
 
-.courses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  width: 100%;
+.no-courses p {
+  font-size: 1.2rem;
+}
+
+/* 淡入淡出动画 */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* 巫闪闪个人签名样式 */
+.wushanshan-signature {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 25px 20px;
+  text-align: center;
+  margin-top: 0;
+}
+
+.signature-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.signature-content p {
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+
+.signature-content p:last-child {
+  margin-bottom: 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.signature-content strong {
+  font-weight: 700;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .series-bookmarks {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .course-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+  }
+
+  .methodology-layout {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
 }
 
 @media (max-width: 768px) {
-  .courses-grid {
+  .core-philosophy {
+    padding: 40px 20px;
+  }
+
+  .series-bookmarks {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .bookmark-card {
+    padding: 25px 20px;
+  }
+
+  .courses-display {
+    padding: 25px 20px;
+  }
+
+  .course-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .course-image {
+    height: 180px;
+  }
+
+  .course-info h4 {
+    font-size: 1.2rem;
+  }
+
+  .methodology-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .steps-compact {
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  .step-compact {
+    padding: 20px 15px;
+    font-size: 1rem;
+  }
+
+  .wushanshan-signature {
+    padding: 20px 15px;
+  }
+
+  .signature-content p {
+    font-size: 1.1rem;
+  }
+
+  .signature-content p:last-child {
+    font-size: 1rem;
   }
 }
 </style>

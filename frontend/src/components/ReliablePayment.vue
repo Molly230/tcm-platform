@@ -119,24 +119,48 @@ const createPayment = async () => {
   loading.value = true
   paymentResult.value = null
   qrCodeUrl.value = ''
-  
+
   try {
-    const response = await axios.post('/api/reliable-pay/create', {
-      order_id: props.orderId,
-      payment_method: paymentMethod.value
-    })
-    
-    if (response.data.success) {
-      qrCodeUrl.value = response.data.payment_url
-      chargeId.value = response.data.charge_id
-      ElMessage.success('支付订单创建成功')
-      
-      // 如果是二维码支付，开始轮询状态
-      if (paymentMethod.value.includes('qr') || paymentMethod.value === 'wechat') {
+    let response
+
+    // 根据支付方式选择不同的API
+    if (paymentMethod.value === 'wechat') {
+      // 使用真实的微信支付API
+      response = await axios.post('/api/wechat-pay/native', {
+        order_id: parseInt(props.orderId)
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+
+      if (response.data.success) {
+        const paymentData = response.data.data
+        qrCodeUrl.value = paymentData.qr_code_url
+        chargeId.value = paymentData.prepay_id
+        ElMessage.success('微信支付二维码已生成')
         startStatusPolling()
+      } else {
+        ElMessage.error(response.data.message || '创建支付失败')
       }
     } else {
-      ElMessage.error(response.data.message || '创建支付失败')
+      // 其他支付方式使用原来的接口
+      response = await axios.post('/api/reliable-pay/create', {
+        order_id: props.orderId,
+        payment_method: paymentMethod.value
+      })
+
+      if (response.data.success) {
+        qrCodeUrl.value = response.data.payment_url
+        chargeId.value = response.data.charge_id
+        ElMessage.success('支付订单创建成功')
+
+        if (paymentMethod.value.includes('qr')) {
+          startStatusPolling()
+        }
+      } else {
+        ElMessage.error(response.data.message || '创建支付失败')
+      }
     }
   } catch (error: any) {
     console.error('创建支付失败:', error)

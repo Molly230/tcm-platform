@@ -4,9 +4,10 @@
       <h1 class="logo" @click="$router.push('/')">中医健康服务平台</h1>
       <nav class="nav">
         <el-button link @click="$router.push('/')">首页</el-button>
-        <el-button link @click="$router.push('/courses')">课程</el-button>
-        <el-button link @click="$router.push('/assessment')">体质测评</el-button>
+        <el-button link @click="$router.push('/solutions')">方案</el-button>
+        <el-button link @click="$router.push('/qa')">问答</el-button>
         <el-button link @click="$router.push('/products')">商城</el-button>
+        <el-button link @click="$router.push('/courses')">课程</el-button>
         <el-button link @click="$router.push('/my')">我的</el-button>
       </nav>
       <div class="user-actions">
@@ -25,30 +26,30 @@
               购物车
             </el-button>
           </template>
-          
+
           <!-- 购物车悬浮预览 -->
           <div class="cart-preview">
             <div class="cart-preview-header">
               <h4>购物车 ({{ cartItemCount }}件)</h4>
             </div>
-            
+
             <div v-if="cartItems.length === 0" class="cart-empty">
               购物车为空
             </div>
-            
+
             <div v-else class="cart-preview-content">
               <div v-for="item in cartItems.slice(0, 3)" :key="item.id" class="cart-preview-item">
-                <img :src="item.images?.[0] || '/default-product.jpg'" :alt="item.name" class="item-image">
+                <img :src="item.image || '/default-product.jpg'" :alt="item.name" class="item-image">
                 <div class="item-info">
                   <div class="item-name">{{ item.name }}</div>
                   <div class="item-price">¥{{ item.price }} × {{ item.quantity }}</div>
                 </div>
               </div>
-              
+
               <div v-if="cartItems.length > 3" class="more-items">
                 还有 {{ cartItems.length - 3 }} 件商品...
               </div>
-              
+
               <div class="cart-preview-footer">
                 <div class="total-price">合计: ¥{{ cartTotalPrice.toFixed(2) }}</div>
                 <el-button type="primary" size="small" @click="$router.push('/cart')">
@@ -58,12 +59,12 @@
             </div>
           </div>
         </el-popover>
-        
+
         <!-- 未登录状态 -->
         <template v-if="!isLoggedIn">
           <el-button type="primary" @click="$router.push('/login')">登录 / 注册</el-button>
         </template>
-        
+
         <!-- 已登录状态 -->
         <template v-else>
           <el-dropdown @command="handleUserAction">
@@ -88,74 +89,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ShoppingCart, User, ArrowDown } from '@element-plus/icons-vue'
-
-interface UserData {
-  id: number
-  email: string
-  username: string
-  full_name?: string
-  avatar?: string
-  role: string
-  status: string
-}
+import { useCartStore } from '../stores/cart'
+import { useUserStore } from '../stores/user'
 
 const router = useRouter()
-const isLoggedIn = ref(false)
-const userData = ref<UserData | null>(null)
+const userStore = useUserStore()
+const cartStore = useCartStore()
+
+// 直接使用 userStore 的响应式状态
+const isLoggedIn = computed(() => userStore.isLoggedIn)
+const userData = computed(() => userStore.user)
 
 // 购物车相关
-const cartItems = ref<any[]>([])
-
-const cartItemCount = computed(() => {
-  return cartItems.value.reduce((total, item) => total + item.quantity, 0)
-})
-
-const cartTotalPrice = computed(() => {
-  return cartItems.value.reduce((total, item) => total + (item.price * item.quantity), 0)
-})
-
-const loadCartItems = () => {
-  try {
-    const cartData = localStorage.getItem('cart')
-    if (cartData) {
-      cartItems.value = JSON.parse(cartData)
-    } else {
-      cartItems.value = []
-    }
-  } catch (error) {
-    console.error('加载购物车数据失败:', error)
-    cartItems.value = []
-  }
-}
-
-const updateCartDisplay = () => {
-  loadCartItems()
-}
-
-const checkLoginStatus = () => {
-  const token = localStorage.getItem('user_token')
-  const userDataStr = localStorage.getItem('user_data')
-  
-  if (token && userDataStr) {
-    try {
-      userData.value = JSON.parse(userDataStr)
-      isLoggedIn.value = true
-    } catch (error) {
-      console.error('解析用户数据失败:', error)
-      localStorage.removeItem('user_token')
-      localStorage.removeItem('user_data')
-      isLoggedIn.value = false
-      userData.value = null
-    }
-  } else {
-    isLoggedIn.value = false
-    userData.value = null
-  }
-}
+const cartItems = computed(() => cartStore.items)
+const cartItemCount = computed(() => cartStore.totalItems)
+const cartTotalPrice = computed(() => cartStore.totalPrice)
 
 const handleUserAction = (command: string) => {
   switch (command) {
@@ -175,38 +127,11 @@ const handleUserAction = (command: string) => {
 }
 
 const handleLogout = () => {
-  localStorage.removeItem('user_token')
-  localStorage.removeItem('user_data')
-  isLoggedIn.value = false
-  userData.value = null
+  userStore.clearUser()
+  cartStore.clearCart()
   ElMessage.success('已退出登录')
   router.push('/')
 }
-
-
-onMounted(() => {
-  checkLoginStatus()
-  loadCartItems()
-  
-  // 监听localStorage变化（用于跨标签页同步登录状态和购物车）
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'user_token' || e.key === 'user_data') {
-      checkLoginStatus()
-    }
-    if (e.key === 'cart') {
-      loadCartItems()
-    }
-  })
-  
-  // 监听自定义购物车更新事件
-  window.addEventListener('cartUpdated', updateCartDisplay)
-})
-
-// 暴露方法供外部调用
-defineExpose({
-  checkLoginStatus,
-  updateCartDisplay
-})
 </script>
 
 <style scoped>

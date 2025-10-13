@@ -5,29 +5,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Floa
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
-import enum
-
-class ConsultationType(str, enum.Enum):
-    AI = "ai"
-    TEXT = "text"
-    VOICE = "voice"
-    VIDEO = "video"
-
-class ConsultationStatus(str, enum.Enum):
-    PENDING = "pending"
-    PAID = "paid"  # 已支付，等待专家接受
-    IN_PROGRESS = "in_progress"
-    WAITING_EXPERT = "waiting_expert"  # 等待专家回复
-    WAITING_USER = "waiting_user"  # 等待用户回复
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
-    REFUNDED = "refunded"  # 已退款
-
-class PaymentStatus(str, enum.Enum):
-    PENDING = "pending"
-    PAID = "paid" 
-    FAILED = "failed"
-    REFUNDED = "refunded"
+from app.core.enums_v2 import ConsultationType, ConsultationStatus, PaymentStatus
 
 class Consultation(Base):
     __tablename__ = "consultations"

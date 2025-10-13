@@ -1,8 +1,25 @@
 """
 FastAPI main application
 """
+# Python 3.13兼容性：首先加载CGI兼容性模块
+import sys
+from pathlib import Path
+backend_path = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_path))
+
+try:
+    from cgi_compat import install_all_compat
+    install_all_compat()
+    print("SUCCESS: 已加载Python 3.13完整兼容性补丁")
+except ImportError:
+    print("WARNING: 兼容性模块未找到")
+
 import os
 import logging
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.requests import Request
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +40,20 @@ app = FastAPI(
     description=settings.PROJECT_DESCRIPTION,
     version=settings.PROJECT_VERSION
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print(f'=== 422 Validation Error Details ===')
+    print(f'URL: {request.url}')
+    print(f'Method: {request.method}')
+    print(f'Errors: {exc.errors()}')
+    print(f'Body: {await request.body()}')
+    print(f'=====================================')
+    return JSONResponse(
+        status_code=422,
+        content={'detail': exc.errors(), 'body': str(await request.body())}
+    )
+
 
 # 请求日志中间件 - 临时禁用异常捕获
 def sanitize_url_for_logging(url: str) -> str:
@@ -131,6 +162,10 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # 包含API路由
 app.include_router(api_router, prefix="/api")
+
+# 包含简洁商品API
+from app.api.simple_products import router as simple_products_router
+app.include_router(simple_products_router)
 
 @app.get("/")
 async def root():

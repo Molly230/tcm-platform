@@ -3,7 +3,7 @@
     <PageContainer>
       <template #breadcrumb>
         <el-breadcrumb separator="/">
-          <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+          <el-breadcrumb-item :to="{ path: '/' }">方案</el-breadcrumb-item>
           <el-breadcrumb-item :to="{ path: '/products' }">商城</el-breadcrumb-item>
           <el-breadcrumb-item>{{ product?.name }}</el-breadcrumb-item>
         </el-breadcrumb>
@@ -103,16 +103,16 @@
             <!-- 价格信息 -->
             <div class="product-price">
               <div class="price-main">
-                <span class="current-price">¥{{ product.price }}</span>
+                <span class="current-price">¥{{ Number(product?.price || 0).toFixed(2) }}</span>
                 <span 
-                  v-if="product.original_price && product.original_price > product.price" 
+                  v-if="product?.original_price && Number(product.original_price) > Number(product.price)" 
                   class="original-price"
                 >
-                  ¥{{ product.original_price }}
+                  ¥{{ Number(product.original_price).toFixed(2) }}
                 </span>
               </div>
-              <div class="price-save" v-if="product.original_price && product.original_price > product.price">
-                节省 ¥{{ (product.original_price - product.price).toFixed(2) }}
+              <div class="price-save" v-if="product?.original_price && Number(product.original_price) > Number(product.price)">
+                节省 ¥{{ (Number(product.original_price) - Number(product.price)).toFixed(2) }}
               </div>
             </div>
 
@@ -328,12 +328,24 @@ const fetchProduct = async () => {
   try {
     loading.value = true
     const productId = route.params.id
-    const response = await fetch(`/api/products/${productId}`)
-    
+    console.log('获取商品详情, productId:', productId)
+
+    // 使用正确的API接口
+    const response = await fetch(`/api/products-simple/?id=${productId}`)
+
     if (response.ok) {
-      product.value = await response.json()
-    } else if (response.status === 404) {
-      product.value = null
+      const data = await response.json()
+      console.log('商品API响应:', data)
+
+      // products-simple 返回数组格式
+      if (data && data.length > 0) {
+        product.value = data[0]
+        console.log('商品信息加载成功:', product.value.name)
+      } else {
+        console.error('商品不存在')
+        product.value = null
+        ElMessage.error('商品不存在')
+      }
     } else {
       throw new Error('获取商品信息失败')
     }
@@ -391,27 +403,28 @@ const addToCart = async () => {
 
 // 立即购买
 const buyNow = async () => {
-  if (!product.value) return
-  
+  if (!product.value) {
+    ElMessage.warning('商品信息不完整')
+    return
+  }
+
   try {
     buyLoading.value = true
-    
-    // 创建临时购物车数据用于直接购买
-    const buyNowData = [{
-      id: product.value.id,
-      product: product.value,
-      quantity: quantity.value,
-      selected: true
-    }]
-    
-    // 保存到本地存储（临时）
-    localStorage.setItem('cart', JSON.stringify(buyNowData))
-    
-    // 跳转到结算页面
-    router.push('/checkout')
+
+    console.log('立即购买商品:', product.value.name, '数量:', quantity.value)
+
+    // 跳转到结算页面，传递商品ID和数量
+    router.push({
+      path: '/checkout',
+      query: {
+        productId: product.value.id,
+        quantity: quantity.value,
+        from: 'direct'
+      }
+    })
   } catch (error) {
     console.error('购买失败:', error)
-    ElMessage.error('购买失败')
+    ElMessage.error('购买失败：' + error.message)
   } finally {
     buyLoading.value = false
   }

@@ -67,15 +67,17 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { authApi } from '../utils/api'
+import { useUserStore } from '../stores/user'
 
 const router = useRouter()
-
+const userStore = useUserStore()
 const logging = ref(false)
 const loginFormRef = ref()
 
 const loginForm = ref({
-  email: '',
-  password: ''
+  email: 'admin@tcm.com',  // 默认填写管理员邮箱
+  password: 'admin123'     // 默认密码（开发环境）
 })
 
 const loginRules = {
@@ -98,49 +100,35 @@ const handleLogin = async () => {
 
     logging.value = true
 
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email_or_username: loginForm.value.email,
-        password: loginForm.value.password
-      })
+    // 使用新的API
+    const result = await authApi.login({
+      username: loginForm.value.email,
+      password: loginForm.value.password
     })
 
-    const result = await response.json()
-
-    if (response.ok) {
-      // 验证是否为管理员
-      const userResponse = await fetch('/api/users/me', {
-        headers: {
-          'Authorization': `Bearer ${result.access_token}`
-        }
-      })
-      
-      const userData = await userResponse.json()
-      
-      if (!userData.is_admin && !userData.is_super_admin) {
+    if (result.success) {
+      // 检查是否为管理员
+      if (!result.data?.user.is_admin) {
         ElMessage.error('权限不足，仅限管理员登录')
         return
       }
 
-      // 清除普通用户数据，避免冲突
-      localStorage.removeItem('user_token')
-      localStorage.removeItem('user_data')
-      
-      // 保存管理员token
-      localStorage.setItem('admin_token', result.access_token)
-      localStorage.setItem('admin_user', JSON.stringify(userData))
-      
-      ElMessage.success('登录成功')
-      
-      // 强制跳转到管理后台
-      window.location.replace('/admin/dashboard')
-      
+      // 保存用户信息到store
+      userStore.setUser(result.data.user, result.data.token)
+
+      // 保存到管理员localStorage
+      localStorage.setItem('admin_token', result.data.token)
+      localStorage.setItem('admin_user', JSON.stringify(result.data.user))
+
+      ElMessage.success(result.message || '登录成功')
+
+      // 跳转到管理后台
+      setTimeout(() => {
+        router.push('/admin/dashboard')
+      }, 300)
+
     } else {
-      ElMessage.error(result.detail || '登录失败')
+      ElMessage.error(result.message || '登录失败')
     }
   } catch (error) {
     console.error('登录失败:', error)

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跳转测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background: #409eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #337ecc;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f7fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Vue Router 跳转测试页面</h1>
+
+    <div class="test-section">
+        <h2>1. 基础页面测试</h2>
+        <button onclick="testUrl('http://localhost:3002/')">首页</button>
+        <button onclick="testUrl('http://localhost:3002/products')">商品列表</button>
+        <button onclick="testUrl('http://localhost:3002/cart')">购物车</button>
+        <button onclick="testUrl('http://localhost:3002/checkout')">结算页面</button>
+        <div id="basic-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. 商品详情页测试</h2>
+        <button onclick="testUrl('http://localhost:3002/products/1')">商品1详情</button>
+        <button onclick="testUrl('http://localhost:3002/products/2')">商品2详情</button>
+        <button onclick="testUrl('http://localhost:3002/products/3')">商品3详情</button>
+        <div id="product-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. 结算页面参数测试</h2>
+        <button onclick="testUrl('http://localhost:3002/checkout?from=cart')">购物车结算</button>
+        <button onclick="testUrl('http://localhost:3002/checkout?productId=1&quantity=2&from=direct')">立即购买-商品1</button>
+        <button onclick="testUrl('http://localhost:3002/checkout?productId=2&quantity=1&from=direct')">立即购买-商品2</button>
+        <div id="checkout-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. API测试</h2>
+        <button onclick="testApi('/api/products-simple/')">获取商品列表</button>
+        <button onclick="testApi('/api/products/1')">获取商品1详情</button>
+        <button onclick="testApi('/api/health/detailed')">健康检查</button>
+        <div id="api-result" class="result"></div>
+    </div>
+
+    <script>
+        function testUrl(url) {
+            const resultDiv = event.target.closest('.test-section').querySelector('.result');
+            resultDiv.innerHTML = `<p>正在测试: <a href="${url}" target="_blank">${url}</a></p>`;
+
+            // 直接打开链接
+            window.open(url, '_blank');
+        }
+
+        async function testApi(endpoint) {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = `<p>正在测试API: ${endpoint}</p>`;
+
+            try {
+                const response = await fetch(`http://localhost:8001${endpoint}`);
+                const data = await response.json();
+
+                resultDiv.innerHTML = `
+                    <p>✅ API测试成功</p>
+                    <p><strong>状态码:</strong> ${response.status}</p>
+                    <p><strong>响应数据:</strong></p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p>❌ API测试失败</p>
+                    <p><strong>错误:</strong> ${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

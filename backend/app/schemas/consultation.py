@@ -4,19 +4,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from enum import Enum
-
-class ConsultationType(str, Enum):
-    AI = "ai"
-    TEXT = "text"
-    VOICE = "voice"
-    VIDEO = "video"
-
-class ConsultationStatus(str, Enum):
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+from app.core.enums_v2 import ConsultationType, ConsultationStatus
 
 class ConsultationBase(BaseModel):
     user_id: int

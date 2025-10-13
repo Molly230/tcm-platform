@@ -175,13 +175,13 @@ const toggleMode = () => {
 
 const handleLogin = async () => {
   try {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch('/api/auth/simple-login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email_or_username: form.email,
+        username: form.email,
         password: form.password,
       }),
     })
@@ -189,14 +189,28 @@ const handleLogin = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.detail || '登录失败')
+      throw new Error(data.detail || data.message || '登录失败')
+    }
+
+    // 提取实际数据（支持统一响应格式）
+    const responseData = data.data || data
+    const token = responseData.token || responseData.access_token
+    const user = responseData.user
+
+    if (!token || !user) {
+      throw new Error('登录响应数据格式错误')
     }
 
     // 使用用户状态管理保存用户信息
-    userStore.setUser(data.user, data.access_token)
+    userStore.setUser(user, token)
+
+    // 登录成功后刷新购物车
+    const { useCartStore } = await import('../stores/cart')
+    const cartStore = useCartStore()
+    await cartStore.loadCart()
 
     ElMessage.success('登录成功')
-    
+
     // 跳转到首页或者用户中心
     router.push('/')
   } catch (error: any) {

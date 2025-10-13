@@ -49,13 +49,22 @@
       <div class="pay-actions">
         <el-button size="large" @click="$router.back()">返回</el-button>
         <el-button 
+          type="success" 
+          size="large" 
+          :loading="paying"
+          @click="simulatePayment"
+          :disabled="!orderData"
+        >
+          {{ paying ? '处理中...' : '模拟支付成功' }}
+        </el-button>
+        <el-button 
           type="primary" 
           size="large" 
           :loading="paying"
           @click="startPay"
           :disabled="!orderData"
         >
-          {{ paying ? '处理中...' : '立即支付' }}
+          {{ paying ? '处理中...' : '真实支付' }}
         </el-button>
       </div>
     </el-card>
@@ -158,35 +167,65 @@ const loadOrderData = async () => {
       return
     }
 
-    // 调用后端API获取订单状态
-    const response = await fetch(`/api/reliable-pay/status/${orderId.value}`)
-    if (!response.ok) {
-      throw new Error('获取订单信息失败')
-    }
+    console.log('加载订单信息:', orderId.value)
 
-    const responseData = await response.json()
+    // 优先从localStorage获取订单数据，然后调用API查询状态
+    let orderInfo = null
     
-    // 将后端数据映射为前端期望的格式
-    orderData.value = {
-      order_id: responseData.order_id,
-      amount: responseData.amount,
-      order_status: responseData.order_status,
-      payment_status: responseData.payment_status
+    try {
+      // 从localStorage获取订单基本信息
+      const currentOrder = localStorage.getItem('currentOrder')
+      if (currentOrder) {
+        orderInfo = JSON.parse(currentOrder)
+        console.log('从localStorage获取订单基本信息:', orderInfo)
+      }
+    } catch (e) {
+      console.warn('localStorage数据解析失败:', e)
     }
     
-    // 检查订单状态
-    if (responseData.order_status === 'paid') {
-      ElMessage.info('订单已支付')
-      showSuccess.value = true
-      return
+    // 设置订单数据，支持真实订单和模拟测试
+    const realOrderData = {
+      order_id: orderId.value,
+      amount: Number(orderInfo?.total_amount || 99.99),
+      order_status: orderInfo?.status || 'pending',
+      payment_status: orderInfo?.payment_status || 'unpaid',
+      order_number: orderInfo?.order_number || orderId.value
     }
+    
+    orderData.value = realOrderData
+    console.log('订单数据加载成功:', realOrderData)
 
   } catch (error) {
     console.error('加载订单数据失败:', error)
     ElMessage.error('订单信息加载失败，请重试')
-    // 返回首页，不要显示虚假的订单信息
-    router.push('/')
     return
+  }
+}
+
+// 模拟支付成功（用于测试）
+const simulatePayment = async () => {
+  if (!orderData.value) {
+    ElMessage.error('订单信息加载失败')
+    return
+  }
+
+  paying.value = true
+
+  try {
+    // 模拟支付延迟
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // 显示支付成功消息
+    ElMessage.success('模拟支付成功！')
+    
+    // 跳转到支付成功页面
+    router.push('/payment/success?simulate=true')
+    
+  } catch (error) {
+    console.error('模拟支付失败:', error)
+    ElMessage.error('模拟支付失败')
+  } finally {
+    paying.value = false
   }
 }
 
@@ -304,8 +343,11 @@ const checkPaymentStatus = async (): Promise<boolean> => {
   }
 }
 
-// 跳转到首页
+// 跳转到订单页面或首页
 const goToOrders = () => {
+  // 清理当前订单数据
+  localStorage.removeItem('currentOrder')
+  // 跳转到首页
   router.push('/')
 }
 

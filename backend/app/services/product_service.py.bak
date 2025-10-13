@@ -1,0 +1,361 @@
+"""
+商品业务服务 - 重构版
+包含完整的业务逻辑、状态管理、权限控制
+"""
+from typing import Optional, List, Dict, Any
+from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
+
+from app.models.product import Product
+from app.models.user import User
+from app.models.audit_log import AuditLog
+from app.schemas.product import ProductCreate, ProductUpdate
+from app.core.enums_v2 import EnumManager, ProductStatus, AuditStatus
+from app.core.exceptions import BusinessRuleError, PermissionError, ValidationError
+from app.services.audit_service import AuditService
+
+
+class ProductService:
+    """商品业务服务"""
+    
+    def __init__(self, db: Session):
+        self.db = db
+        self.audit_service = AuditService(db)
+    
+    def create_product(self, product_data: ProductCreate, current_user: User) -> Product:
+        """
+        创建商品 - 完整业务逻辑
+        """
+        # 1. 权限检查
+        self._check_create_permission(current_user, product_data)
+        
+        # 2. 数据验证
+        self._validate_product_data(product_data)
+        
+        # 3. 业务规则验证
+        self._validate_business_rules(product_data, current_user)
+        
+        # 4. 创建商品
+        try:
+            # 数据库事务
+            product = Product(
+                name=product_data.name,
+                description=product_data.description,
+                category=product_data.category,
+                price=product_data.price,
+                stock_quantity=product_data.stock_quantity or 0,
+                images=product_data.images or [],
+                usage_instructions=product_data.usage_instructions or "",
+                is_featured=product_data.is_featured,
+                is_common=product_data.is_common,
+                is_prescription_required=product_data.is_prescription_required,
+                # 状态管理
+                status=ProductStatus.DRAFT,  # 默认草稿
+                audit_status=AuditStatus.PENDING,  # 默认待审核
+                submitted_by=current_user.username,
+                submitted_at=None  # 提交审核时才设置
+            )
+            
+            self.db.add(product)
+            self.db.flush()  # 获取ID但不提交
+            
+            # 5. 记录审计日志
+            self.audit_service.log_create(
+                entity_type="product",
+                entity_id=product.id,
+                entity_title=product.name,
+                operator=current_user,
+                new_data=self._product_to_dict(product)
+            )
+            
+            self.db.commit()
+            return product
+            
+        except Exception as e:
+            self.db.rollback()
+            raise BusinessRuleError(f"创建商品失败: {str(e)}")
+    
+    def update_product(self, product_id: int, update_data: ProductUpdate, 
+                      current_user: User) -> Product:
+        """
+        更新商品信息
+        """
+        # 获取商品
+        product = self._get_product_or_404(product_id)
+        
+        # 权限检查
+        self._check_update_permission(current_user, product)
+        
+        # 状态检查 - 某些状态下不能修改
+        if product.status in [ProductStatus.ACTIVE] and not current_user.is_admin:
+            raise BusinessRuleError("在售商品只能由管理员修改")
+        
+        # 保存原始数据用于审计
+        old_data = self._product_to_dict(product)
+        
+        try:
+            # 更新字段
+            update_dict = update_data.dict(exclude_unset=True)
+            for field, value in update_dict.items():
+                if hasattr(product, field):
+                    setattr(product, field, value)
+            
+            # 如果修改了关键字段，重置审核状态
+            critical_fields = {'name', 'description', 'category', 'price'}
+            if any(field in update_dict for field in critical_fields):
+                if product.audit_status == AuditStatus.APPROVED:
+                    product.audit_status = AuditStatus.PENDING
+                    product.status = ProductStatus.PENDING
+            
+            # 记录审计
+            self.audit_service.log_update(
+                entity_type="product",
+                entity_id=product.id,
+                entity_title=product.name,
+                operator=current_user,
+                old_data=old_data,
+                new_data=self._product_to_dict(product)
+            )
+            
+            self.db.commit()
+            return product
+            
+        except Exception as e:
+            self.db.rollback()
+            raise BusinessRuleError(f"更新商品失败: {str(e)}")
+    
+    def change_product_status(self, product_id: int, new_status: str, 
+                             current_user: User, reason: str = None) -> Product:
+        """
+        商品状态转换 - 带状态机验证
+        """
+        product = self._get_product_or_404(product_id)
+        old_status = product.status
+        
+        # 状态转换验证
+        if not EnumManager.can_transition_to("PRODUCT_STATUS", old_status, new_status):
+            raise BusinessRuleError(f"无法从 {old_status} 转换到 {new_status}")
+        
+        # 权限检查
+        self._check_status_change_permission(current_user, product, new_status)
+        
+        # 特殊业务规则
+        if new_status == ProductStatus.ACTIVE:
+            if product.audit_status != AuditStatus.APPROVED:
+                raise BusinessRuleError("只有审核通过的商品才能上架")
+            if product.stock_quantity <= 0:
+                raise BusinessRuleError("库存不足，无法上架")
+        
+        try:
+            # 执行状态转换
+            product.status = new_status
+            
+            # 状态转换的副作用
+            self._handle_status_change_effects(product, old_status, new_status)
+            
+            # 记录审计
+            self.audit_service.log_status_change(
+                entity_type="product",
+                entity_id=product.id,
+                entity_title=product.name,
+                operator=current_user,
+                old_status=old_status,
+                new_status=new_status,
+                reason=reason
+            )
+            
+            self.db.commit()
+            return product
+            
+        except Exception as e:
+            self.db.rollback()
+            raise BusinessRuleError(f"状态转换失败: {str(e)}")
+    
+    def submit_for_review(self, product_id: int, current_user: User) -> Product:
+        """
+        提交商品审核
+        """
+        product = self._get_product_or_404(product_id)
+        
+        if product.status != ProductStatus.DRAFT:
+            raise BusinessRuleError("只有草稿状态的商品才能提交审核")
+        
+        # 完整性检查
+        self._validate_product_completeness(product)
+        
+        try:
+            product.status = ProductStatus.PENDING
+            product.audit_status = AuditStatus.PENDING
+            product.submitted_at = self.db.execute("SELECT CURRENT_TIMESTAMP").scalar()
+            
+            self.audit_service.log_action(
+                entity_type="product",
+                entity_id=product.id,
+                action="submit_for_review",
+                operator=current_user,
+                reason="提交商品审核"
+            )
+            
+            self.db.commit()
+            return product
+            
+        except Exception as e:
+            self.db.rollback()
+            raise BusinessRuleError(f"提交审核失败: {str(e)}")
+    
+    def review_product(self, product_id: int, action: str, current_user: User,
+                      notes: str = None) -> Product:
+        """
+        管理员审核商品
+        """
+        if not current_user.is_admin:
+            raise PermissionError("只有管理员可以审核商品")
+        
+        product = self._get_product_or_404(product_id)
+        
+        if product.audit_status != AuditStatus.PENDING:
+            raise BusinessRuleError("商品不在待审核状态")
+        
+        action_map = {
+            "approve": AuditStatus.APPROVED,
+            "reject": AuditStatus.REJECTED
+        }
+        
+        if action not in action_map:
+            raise ValidationError(f"无效的审核操作: {action}")
+        
+        try:
+            old_status = product.audit_status
+            product.audit_status = action_map[action]
+            product.reviewed_by = current_user.username
+            product.reviewed_at = self.db.execute("SELECT CURRENT_TIMESTAMP").scalar()
+            product.audit_notes = notes
+            
+            # 审核通过后自动设置为可上架状态
+            if action == "approve":
+                product.status = ProductStatus.APPROVED
+            else:
+                product.status = ProductStatus.REJECTED
+            
+            self.audit_service.log_review(
+                entity_type="product",
+                entity_id=product.id,
+                entity_title=product.name,
+                operator=current_user,
+                action=action,
+                old_status=old_status,
+                new_status=product.audit_status,
+                reason=notes
+            )
+            
+            self.db.commit()
+            return product
+            
+        except Exception as e:
+            self.db.rollback()
+            raise BusinessRuleError(f"审核操作失败: {str(e)}")
+    
+    # 私有方法
+    def _get_product_or_404(self, product_id: int) -> Product:
+        """获取商品或抛出404错误"""
+        product = self.db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            raise ValidationError(f"商品不存在: {product_id}")
+        return product
+    
+    def _check_create_permission(self, user: User, product_data: ProductCreate):
+        """检查创建权限"""
+        if product_data.is_prescription_required and not user.is_admin:
+            if user.role != "EXPERT":
+                raise PermissionError("只有医疗专家或管理员才能创建处方商品")
+    
+    def _check_update_permission(self, user: User, product: Product):
+        """检查更新权限"""
+        if not user.is_admin and product.submitted_by != user.username:
+            raise PermissionError("只能修改自己创建的商品")
+    
+    def _check_status_change_permission(self, user: User, product: Product, new_status: str):
+        """检查状态变更权限"""
+        admin_only_transitions = [ProductStatus.ACTIVE, ProductStatus.APPROVED, ProductStatus.REJECTED]
+        
+        if new_status in admin_only_transitions and not user.is_admin:
+            raise PermissionError(f"只有管理员可以设置商品状态为: {new_status}")
+    
+    def _validate_product_data(self, product_data: ProductCreate):
+        """验证商品数据"""
+        errors = []
+        
+        # 名称验证
+        if not product_data.name or len(product_data.name.strip()) < 2:
+            errors.append("商品名称至少2个字符")
+        
+        # 分类验证
+        if not EnumManager.validate_enum_value("PRODUCT_CATEGORY", product_data.category):
+            errors.append("无效的商品分类")
+        
+        # 价格验证
+        if product_data.price <= 0:
+            errors.append("商品价格必须大于0")
+        
+        # 库存验证
+        if product_data.stock_quantity is not None and product_data.stock_quantity < 0:
+            errors.append("库存数量不能小于0")
+        
+        if errors:
+            raise ValidationError("; ".join(errors))
+    
+    def _validate_business_rules(self, product_data: ProductCreate, user: User):
+        """验证业务规则"""
+        # 处方商品规则
+        if product_data.is_prescription_required:
+            if user.role not in ["EXPERT", "ADMIN"]:
+                raise BusinessRuleError("只有医疗专家或管理员才能创建处方商品")
+        
+        # 价格规则（示例）
+        if product_data.price > 10000:
+            if not user.is_admin:
+                raise BusinessRuleError("高价商品需要管理员审核")
+    
+    def _validate_product_completeness(self, product: Product):
+        """验证商品完整性（提交审核前）"""
+        errors = []
+        
+        if not product.description:
+            errors.append("商品描述不能为空")
+        
+        if not product.images:
+            errors.append("商品必须至少有一张图片")
+        
+        if product.price <= 0:
+            errors.append("商品价格必须大于0")
+        
+        if errors:
+            raise ValidationError("商品信息不完整: " + "; ".join(errors))
+    
+    def _handle_status_change_effects(self, product: Product, old_status: str, new_status: str):
+        """处理状态转换的副作用"""
+        # 上架时的处理
+        if new_status == ProductStatus.ACTIVE:
+            # 可以在这里添加上架通知、索引更新等逻辑
+            pass
+        
+        # 下架时的处理
+        if new_status == ProductStatus.INACTIVE:
+            # 可以添加下架通知、购物车清理等逻辑
+            pass
+    
+    def _product_to_dict(self, product: Product) -> dict:
+        """将商品对象转换为字典（用于审计）"""
+        return {
+            "id": product.id,
+            "name": product.name,
+            "description": product.description,
+            "category": product.category,
+            "price": float(product.price) if product.price else None,
+            "stock_quantity": product.stock_quantity,
+            "status": product.status,
+            "audit_status": product.audit_status,
+            "is_featured": product.is_featured,
+            "is_common": product.is_common,
+            "is_prescription_required": product.is_prescription_required
+        }

@@ -8,29 +8,15 @@
           <p class="assessment-subtitle">用整体性视角分析身体信号和健康状态</p>
         </div>
 
-        <!-- 疾病选择界面 -->
-        <div class="disease-selection" v-if="!selectedDisease">
-          <div class="selection-header">
-            <h2>选择测评类型</h2>
-            <p>请选择您想要进行的专业测评，我们将为您提供个性化的健康分析</p>
-          </div>
-          
-          <div class="disease-cards">
-            <div 
-              v-for="disease in diseases" 
-              :key="disease.code"
-              class="disease-card"
-              :class="{ disabled: disease.status !== 'active' }"
-              @click="selectDisease(disease)"
-            >
-              <div class="card-icon">{{ getIconClass(disease.code) }}</div>
-              <h3>{{ disease.name }}</h3>
-              <div class="disease-status">
-                <span v-if="disease.status === 'active'" class="available">✅ 可用</span>
-                <span v-else class="coming-soon">🚧 {{ disease.status === 'coming_soon' ? '开发中' : '暂不可用' }}</span>
-              </div>
-              <p class="disease-description">{{ getDiseaseDescription(disease.code) }}</p>
-            </div>
+        <!-- 无效访问提示 -->
+        <div class="invalid-access" v-if="!selectedDisease && !isStarted">
+          <div class="invalid-content">
+            <div class="invalid-icon">⚠️</div>
+            <h2>请从首页选择具体的测评类型</h2>
+            <p>您需要从首页选择具体的健康问题进行专业测评</p>
+            <el-button type="primary" size="large" @click="goToHome">
+              返回首页
+            </el-button>
           </div>
         </div>
 
@@ -310,6 +296,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import PageContainer from '@/components/PageContainer.vue'
 import { Clock, Document, SuccessFilled, ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -393,15 +380,6 @@ const hasAnswer = computed(() => {
 })
 
 // 方法
-const getIconClass = (diseaseCode: string) => {
-  const iconMap = {
-    insomnia: '🌙',
-    stomach: '🫃', 
-    aging: '⏰',
-    consultation: '👨‍⚕️'
-  }
-  return iconMap[diseaseCode] || '📋'
-}
 
 const selectDisease = async (disease: any) => {
   if (disease.status !== 'active') {
@@ -1168,6 +1146,11 @@ const getSyndromeDetails = () => {
   return diagnosisResult.value.syndrome_patterns[syndromeName] || null
 }
 
+const goToHome = () => {
+  const router = useRouter()
+  router.push('/')
+}
+
 const restartAssessment = () => {
   isStarted.value = false
   isCompleted.value = false
@@ -1180,6 +1163,8 @@ const restartAssessment = () => {
 }
 
 onMounted(async () => {
+  const route = useRoute()
+  
   // 从后端加载可用的诊断类型
   try {
     const response = await fetch('/api/diagnosis/diseases')
@@ -1193,6 +1178,34 @@ onMounted(async () => {
       { code: 'stomach', name: '胃病', status: 'active' },
       { code: 'aging', name: '早衰', status: 'active' }
     ]
+  }
+  
+  // 检查URL参数，如果有type参数就自动选择对应的测评
+  const typeParam = route.query.type as string
+  if (typeParam) {
+    const disease = diseases.value.find(d => d.code === typeParam)
+    if (disease && disease.status === 'active') {
+      // 直接设置选中状态，避免显示选择界面
+      selectedDisease.value = disease.code
+      
+      // 根据疾病类型直接加载问卷并开始测评
+      if (disease.code === 'insomnia') {
+        await loadInsomniaQuestions()
+        isStarted.value = true
+        currentQuestion.value = 0
+        currentAnswer.value = ''
+      } else if (disease.code === 'stomach') {
+        await loadStomachQuestions()
+        isStarted.value = true
+        currentQuestion.value = 0
+        currentAnswer.value = ''
+      } else if (disease.code === 'aging') {
+        await loadAgingQuestions()
+        isStarted.value = true
+        currentQuestion.value = 0
+        currentAnswer.value = ''
+      }
+    }
   }
 })
 </script>
@@ -1545,140 +1558,36 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
-/* 病症选择样式 */
-.disease-selection {
-  padding: 50px 40px;
+/* 无效访问提示样式 */
+.invalid-access {
+  padding: 80px 40px;
   text-align: center;
 }
 
-.selection-header {
-  margin-bottom: 40px;
-}
-
-.selection-header h2 {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: #2d3436;
-  margin-bottom: 15px;
-}
-
-.selection-header p {
-  font-size: 1.1rem;
-  color: #636e72;
+.invalid-content {
   max-width: 600px;
   margin: 0 auto;
 }
 
-.disease-cards {
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  gap: 30px;
-  margin-top: 30px;
-  max-width: 1000px;
-  margin-left: auto;
-  margin-right: auto;
-  flex-wrap: wrap;
+.invalid-icon {
+  font-size: 4rem;
+  margin-bottom: 30px;
 }
 
-.disease-card {
-  border: 2px solid #e9ecef;
-  border-radius: 15px;
-  padding: 30px 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-  position: relative;
-  overflow: hidden;
-  min-height: 250px;
-  width: 200px;
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.disease-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.disease-card:hover::before {
-  opacity: 1;
-}
-
-.disease-card:hover:not(.disabled) {
-  border-color: #667eea;
-  transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(102, 126, 234, 0.2);
-}
-
-.disease-card.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.card-icon {
-  font-size: 3rem;
-  color: #667eea;
-  margin-bottom: 15px;
-  position: relative;
-  z-index: 1;
-}
-
-.disease-card h3 {
-  font-size: 1.3rem;
-  font-weight: 600;
+.invalid-content h2 {
+  font-size: 2rem;
+  font-weight: 700;
   color: #2d3436;
-  margin-bottom: 12px;
-  position: relative;
-  z-index: 1;
+  margin-bottom: 20px;
 }
 
-.coming-soon {
-  color: #f39c12;
-  font-weight: 500;
-}
-
-.available {
-  color: #27ae60;
-  font-weight: 500;
-}
-
-.disease-features {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  position: relative;
-  z-index: 1;
-}
-
-.disease-features span {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 4px 8px;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.disease-description {
+.invalid-content p {
+  font-size: 1.1rem;
   color: #636e72;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  margin-top: 10px;
-  position: relative;
-  z-index: 1;
+  margin-bottom: 40px;
+  line-height: 1.6;
 }
+
 
 .back-button-container {
   margin-bottom: 30px;
@@ -2134,22 +2043,6 @@ onMounted(async () => {
     max-width: none;
   }
   
-  .disease-selection {
-    padding: 30px 20px;
-  }
-  
-  .disease-cards {
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    margin-top: 20px;
-  }
-  
-  .disease-card {
-    width: 100%;
-    max-width: 300px;
-    padding: 25px 20px;
-  }
   
   .treatment-sections {
     grid-template-columns: 1fr;

@@ -1,14 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import HealthSolutionView from '../views/HealthSolutionView.vue'
 import AboutView from '../views/AboutView.vue'
 import CoursesView from '../views/CoursesView.vue'
 import CourseDetailView from '../views/CourseDetailView.vue'
+import SimpleProductsView from '../views/SimpleProductsView.vue'
+import SimpleCheckoutView from '../views/SimpleCheckoutView.vue'
 import ProductsView from '../views/ProductsView.vue'
-import ProductDetailView from '../views/ProductDetailView.vue'
 import CartView from '../views/CartView.vue'
 import CheckoutView from '../views/CheckoutView.vue'
-import PaymentView from '../views/PaymentView.vue'
+import ProductDetailView from '../views/ProductDetailView.vue'
+import SimplePaymentView from '../views/SimplePaymentView.vue'
 import PaymentSuccessView from '../views/PaymentSuccessView.vue'
+import PaymentQRView from '../views/PaymentQRView.vue'
 import PaymentTest from '../views/PaymentTest.vue'
 import SimplePay from '../views/SimplePay.vue'
 import AdminLogin from '../views/AdminLogin.vue'
@@ -30,6 +34,11 @@ import ProfileView from '../views/ProfileView.vue'
 import MyView from '../views/MyView.vue'
 import TestUpload from '../views/TestUpload.vue'
 import AssessmentView from '../views/AssessmentView.vue'
+import InsomniaAssessmentView from '../views/InsomniaAssessmentView.vue'
+import HealthCognitionAssessment from '../views/HealthCognitionAssessment.vue'
+import QAView from '../views/QAView.vue'
+import HealthMisconceptionsView from '../views/HealthMisconceptionsView.vue'
+import ThreeLayerSystemView from '../views/ThreeLayerSystemView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,6 +47,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView
+    },
+    {
+      path: '/solutions',
+      name: 'solutions',
+      component: HealthSolutionView
     },
     {
       path: '/about',
@@ -55,9 +69,34 @@ const router = createRouter({
       component: CourseDetailView
     },
     {
-      path: '/assessment',
-      name: 'assessment',
-      component: AssessmentView
+      path: '/three-layer-system',
+      name: 'three-layer-system',
+      component: ThreeLayerSystemView
+    },
+    {
+      path: '/insomnia-assessment',
+      name: 'insomnia-assessment',
+      component: InsomniaAssessmentView
+    },
+    {
+      path: '/health-cognition-assessment',
+      name: 'health-cognition-assessment',
+      component: HealthCognitionAssessment
+    },
+    {
+      path: '/qa',
+      name: 'qa',
+      component: QAView
+    },
+    {
+      path: '/health-misconceptions',
+      name: 'health-misconceptions',
+      component: HealthMisconceptionsView
+    },
+    {
+      path: '/simple-products',
+      name: 'simple-products',
+      component: SimpleProductsView
     },
     {
       path: '/products',
@@ -70,24 +109,34 @@ const router = createRouter({
       component: ProductDetailView
     },
     {
-      path: '/cart',
-      name: 'cart',
-      component: CartView
-    },
-    {
       path: '/checkout',
       name: 'checkout',
       component: CheckoutView
     },
     {
-      path: '/payment/:orderId',
-      name: 'payment',
-      component: PaymentView
+      path: '/cart',
+      name: 'cart',
+      component: CartView
+    },
+    {
+      path: '/simple-checkout',
+      name: 'simple-checkout',
+      component: SimpleCheckoutView
+    },
+    {
+      path: '/simple-payment/:id',
+      name: 'simple-payment',
+      component: SimplePaymentView
     },
     {
       path: '/simple-pay/:orderId',
       name: 'simple-pay',
       component: SimplePay
+    },
+    {
+      path: '/payment/qr',
+      name: 'payment-qr',
+      component: PaymentQRView
     },
     {
       path: '/payment/success',
@@ -224,7 +273,7 @@ router.beforeEach((to, from, next) => {
     }
     
     // 检查用户状态
-    if (userStore.user && (!userStore.user.is_active || userStore.user.status === 'banned')) {
+    if (userStore.user && (!userStore.user.is_active || userStore.user.status === 'BANNED')) {
       userStore.clearUser()
       next('/login')
       return

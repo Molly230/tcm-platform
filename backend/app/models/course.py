@@ -5,21 +5,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
-import enum
-
-class CourseCategory(str, enum.Enum):
-    BASIC = "basic"
-    SEASONAL = "seasonal" 
-    DIET = "diet"
-    MASSAGE = "massage"
-    HERB = "herb"
-    DISEASE_FOCUSED = "逐病精讲"  # 逐病精讲分类
-    COMPREHENSIVE = "全面学医"   # 全面学医分类
-
-class VideoStatus(str, enum.Enum):
-    PROCESSING = "processing"
-    READY = "ready"
-    ERROR = "error"
+from app.core.enums_v2 import CourseCategory, VideoStatus, AuditStatus
 
 class Course(Base):
     __tablename__ = "courses"
@@ -36,6 +22,15 @@ class Course(Base):
     instructor = Column(String)  # 讲师名称
     total_lessons = Column(Integer, default=0)  # 总课时数
     total_duration = Column(Integer, default=0)  # 总时长（分钟）
+    
+    # 审核相关字段
+    audit_status = Column(Enum(AuditStatus), default=AuditStatus.DRAFT)  # 审核状态
+    submitted_by = Column(String)  # 提交人
+    submitted_at = Column(DateTime(timezone=True))  # 提交时间
+    reviewed_by = Column(String)  # 审核人
+    reviewed_at = Column(DateTime(timezone=True))  # 审核时间
+    audit_notes = Column(Text)  # 审核备注
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

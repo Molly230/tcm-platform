@@ -10,6 +10,8 @@ interface User {
   is_active: boolean
   is_admin?: boolean
   is_super_admin?: boolean
+  status?: string
+  role?: string
 }
 
 export const useUserStore = defineStore('user', () => {
@@ -19,8 +21,15 @@ export const useUserStore = defineStore('user', () => {
 
   // 从localStorage初始化用户状态
   const initFromStorage = () => {
-    const storedToken = localStorage.getItem('user_token')
-    const storedUser = localStorage.getItem('user_data')
+    // 优先检查管理员token
+    let storedToken = localStorage.getItem('admin_token')
+    let storedUser = localStorage.getItem('admin_user')
+    
+    // 如果没有管理员token，检查普通用户token
+    if (!storedToken) {
+      storedToken = localStorage.getItem('user_token')
+      storedUser = localStorage.getItem('user_data')
+    }
     
     if (storedToken && storedUser) {
       try {
@@ -52,6 +61,8 @@ export const useUserStore = defineStore('user', () => {
     
     localStorage.removeItem('user_token')
     localStorage.removeItem('user_data')
+    localStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_user')
   }
 
   // 获取用户ID
@@ -67,7 +78,7 @@ export const useUserStore = defineStore('user', () => {
 
   // 检查是否为管理员
   const isAdmin = (): boolean => {
-    return user.value?.is_admin || user.value?.is_super_admin || false
+    return user.value?.is_admin || user.value?.is_super_admin || user.value?.role === 'ADMIN' || user.value?.role === 'SUPER_ADMIN' || false
   }
 
   // 初始化

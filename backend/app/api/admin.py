@@ -8,13 +8,20 @@ import io
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
 from fastapi.responses import StreamingResponse
+from app.core.exceptions import (
+    NotFoundException, BusinessException, ValidationException,
+    FileTooLargeException, UnsupportedFileTypeException, DatabaseException,
+    CommonErrors
+)
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pydantic import BaseModel
 
 from app import schemas, models
 from app.database import get_db
 from app.core.permissions import require_admin_role, get_current_user
 from app.core.logger import log_admin_action, log_file_upload, log_data_export, admin_logger
+from app.core.enums_v2 import AuditStatus, ExpertStatus, ProductStatus, OrderStatus, ConsultationStatus, ConsultationType
 
 router = APIRouter(tags=["admin"])
 
@@ -23,8 +30,39 @@ router = APIRouter(tags=["admin"])
 @router.post("/test")
 def test_create():
     """测试API端点"""
+    from app.core.response import ApiResponse
     admin_logger.logger.info("测试API被调用")
-    return {"message": "测试成功"}
+    return ApiResponse.success(message="管理员API测试成功")
+
+@router.get("/stats")
+def get_admin_stats(db: Session = Depends(get_db), current_user: models.User = Depends(require_admin_role)):
+    """获取管理后台统计数据"""
+    from app.core.response import ApiResponse
+    
+    try:
+        # 基础统计
+        total_users = db.query(models.User).count()
+        total_experts = db.query(models.Expert).count()
+        total_courses = db.query(models.Course).count()
+        total_products = db.query(models.Product).count()
+        
+        stats = {
+            "overview": {
+                "total_users": total_users,
+                "total_experts": total_experts, 
+                "total_courses": total_courses,
+                "total_products": total_products
+            },
+            "today": {
+                "new_users": 0,  # 可以后续添加具体逻辑
+                "new_orders": 0,
+                "revenue": 0.0
+            }
+        }
+        
+        return ApiResponse.success(stats, "统计数据获取成功")
+    except Exception as e:
+        return ApiResponse.error(f"获取统计数据失败: {str(e)}", 500)
 
 @router.get("/courses", response_model=List[schemas.Course])
 def get_all_courses(
@@ -71,10 +109,7 @@ def update_course(
     """更新课程信息"""
     db_course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not db_course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        raise CommonErrors.COURSE_NOT_FOUND
     
     for field, value in course_update.dict(exclude_unset=True).items():
         setattr(db_course, field, value)
@@ -92,10 +127,7 @@ def delete_course(
     """删除课程"""
     db_course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not db_course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        raise CommonErrors.COURSE_NOT_FOUND
     
     course_title = db_course.title  # 保存标题用于日志
     db.delete(db_course)
@@ -136,10 +168,7 @@ def create_lesson(
     # 检查课程是否存在
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        raise CommonErrors.COURSE_NOT_FOUND
     
     # 如果没有指定顺序，自动设置为最后一个
     if not lesson.order:
@@ -174,10 +203,7 @@ def update_lesson(
     """更新课时信息"""
     db_lesson = db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first()
     if not db_lesson:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Lesson not found"
-        )
+        raise NotFoundException("课时")
     
     for field, value in lesson_update.dict(exclude_unset=True).items():
         setattr(db_lesson, field, value)
@@ -195,10 +221,7 @@ def delete_lesson(
     """删除课时"""
     db_lesson = db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first()
     if not db_lesson:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Lesson not found"
-        )
+        raise NotFoundException("课时")
     
     course_id = db_lesson.course_id
     db.delete(db_lesson)
@@ -232,25 +255,16 @@ async def upload_video(
     
     # 文件名安全检查
     if not file.filename or ".." in file.filename or "/" in file.filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid filename"
-        )
+        raise ValidationException("文件名无效")
     
     # 检查文件扩展名
     file_extension = os.path.splitext(file.filename)[1].lower()
     if file_extension not in allowed_extensions:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file extension. Allowed: {', '.join(allowed_extensions)}"
-        )
+        raise UnsupportedFileTypeException(f"支持的格式：{', '.join(allowed_extensions)}")
     
     # 检查MIME类型
     if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file type. Allowed: {', '.join(allowed_types)}"
-        )
+        raise UnsupportedFileTypeException(f"支持的格式：{', '.join(allowed_types)}")
     
     # 检查文件大小（限制为1GB）
     max_size = 1024 * 1024 * 1024  # 1GB
@@ -258,16 +272,10 @@ async def upload_video(
     file_size = len(content)
     
     if file_size == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Empty file not allowed"
-        )
+        raise ValidationException("文件不能为空")
     
     if file_size > max_size:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File too large. Maximum size is 1GB."
-        )
+        raise FileTooLargeException("1GB")
     
     # 生成安全的文件名
     unique_filename = f"{uuid.uuid4()}{file_extension}"
@@ -284,10 +292,7 @@ async def upload_video(
         with open(file_path, "wb") as buffer:
             buffer.write(content)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}"
-        )
+        raise DatabaseException(f"文件保存失败: {str(e)}")
     
     # 计算文件哈希（用于防重复）
     import hashlib
@@ -325,25 +330,16 @@ async def upload_image(
     
     # 文件名安全检查
     if not file.filename or ".." in file.filename or "/" in file.filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid filename"
-        )
+        raise ValidationException("文件名无效")
     
     # 检查文件扩展名
     file_extension = os.path.splitext(file.filename)[1].lower()
     if file_extension not in allowed_extensions:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file extension. Allowed: {', '.join(allowed_extensions)}"
-        )
+        raise UnsupportedFileTypeException(f"支持的格式：{', '.join(allowed_extensions)}")
     
     # 检查MIME类型
     if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file type. Allowed: {', '.join(allowed_types)}"
-        )
+        raise UnsupportedFileTypeException(f"支持的格式：{', '.join(allowed_types)}")
     
     # 检查文件大小（限制为20MB）
     max_size = 20 * 1024 * 1024  # 20MB
@@ -351,16 +347,10 @@ async def upload_image(
     file_size = len(content)
     
     if file_size == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Empty file not allowed"
-        )
+        raise ValidationException("文件不能为空")
     
     if file_size > max_size:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File too large. Maximum size is 20MB."
-        )
+        raise FileTooLargeException("20MB")
     
     # 生成安全的文件名
     unique_filename = f"{uuid.uuid4()}{file_extension}"
@@ -377,10 +367,7 @@ async def upload_image(
         with open(file_path, "wb") as buffer:
             buffer.write(content)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}"
-        )
+        raise DatabaseException(f"文件保存失败: {str(e)}")
     
     # 计算文件哈希
     import hashlib
@@ -442,25 +429,16 @@ async def upload_document(
     
     # 文件名安全检查
     if not file.filename or ".." in file.filename or "/" in file.filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid filename"
-        )
+        raise ValidationException("文件名无效")
     
     # 检查文件扩展名
     file_extension = os.path.splitext(file.filename)[1].lower()
     if file_extension not in allowed_extensions:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file extension. Allowed: {', '.join(allowed_extensions)}"
-        )
+        raise UnsupportedFileTypeException(f"支持的格式：{', '.join(allowed_extensions)}")
     
     # 检查MIME类型
     if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file type. Allowed: {', '.join(allowed_types)}"
-        )
+        raise UnsupportedFileTypeException(f"支持的格式：{', '.join(allowed_types)}")
     
     # 检查文件大小（限制为50MB）
     max_size = 50 * 1024 * 1024  # 50MB
@@ -468,16 +446,10 @@ async def upload_document(
     file_size = len(content)
     
     if file_size == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Empty file not allowed"
-        )
+        raise ValidationException("文件不能为空")
     
     if file_size > max_size:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File too large. Maximum size is 50MB."
-        )
+        raise FileTooLargeException("50MB")
     
     # 生成安全的文件名
     unique_filename = f"{uuid.uuid4()}{file_extension}"
@@ -494,10 +466,7 @@ async def upload_document(
         with open(file_path, "wb") as buffer:
             buffer.write(content)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}"
-        )
+        raise DatabaseException(f"文件保存失败: {str(e)}")
     
     # 计算文件哈希
     import hashlib
@@ -536,28 +505,28 @@ def get_statistics(
     
     # 专家统计
     total_experts = db.query(models.Expert).count()
-    active_experts = db.query(models.Expert).filter(models.Expert.status == "active").count()
+    active_experts = db.query(models.Expert).filter(models.Expert.status == ExpertStatus.ACTIVE).count()
     verified_experts = db.query(models.Expert).filter(models.Expert.is_verified == True).count()
     
     # 商品统计
     total_products = db.query(models.Product).count()
-    active_products = db.query(models.Product).filter(models.Product.status == "active").count()
+    active_products = db.query(models.Product).filter(models.Product.status == ProductStatus.ACTIVE).count()
     featured_products = db.query(models.Product).filter(models.Product.is_featured == True).count()
     
     # 订单统计
     total_orders = db.query(models.Order).count()
-    pending_orders = db.query(models.Order).filter(models.Order.status == "pending_payment").count()
-    completed_orders = db.query(models.Order).filter(models.Order.status == "delivered").count()
+    pending_orders = db.query(models.Order).filter(models.Order.status == OrderStatus.PENDING_PAYMENT).count()
+    completed_orders = db.query(models.Order).filter(models.Order.status == OrderStatus.DELIVERED).count()
     total_revenue = db.query(func.sum(models.Order.total_amount)).filter(
-        models.Order.status.in_(["paid", "shipped", "delivered"])
+        models.Order.status.in_([OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED])
     ).scalar() or 0
     
     # 咨询统计
     total_consultations = db.query(models.Consultation).count()
-    pending_consultations = db.query(models.Consultation).filter(models.Consultation.status == "pending").count()
-    completed_consultations = db.query(models.Consultation).filter(models.Consultation.status == "completed").count()
-    ai_consultations = db.query(models.Consultation).filter(models.Consultation.type == "ai").count()
-    expert_consultations = db.query(models.Consultation).filter(models.Consultation.type.in_(["text", "voice", "video"])).count()
+    pending_consultations = db.query(models.Consultation).filter(models.Consultation.status == ConsultationStatus.PENDING).count()
+    completed_consultations = db.query(models.Consultation).filter(models.Consultation.status == ConsultationStatus.COMPLETED).count()
+    ai_consultations = db.query(models.Consultation).filter(models.Consultation.type == ConsultationType.AI).count()
+    expert_consultations = db.query(models.Consultation).filter(models.Consultation.type.in_([ConsultationType.TEXT, ConsultationType.VOICE, ConsultationType.VIDEO])).count()
     
     # 用户分析
     active_users = db.query(models.User).filter(models.User.status == UserStatus.ACTIVE).count()
@@ -578,14 +547,14 @@ def get_statistics(
     new_consultations_week = db.query(models.Consultation).filter(models.Consultation.created_at >= seven_days_ago).count()
     weekly_revenue = db.query(func.sum(models.Order.total_amount)).filter(
         models.Order.created_at >= seven_days_ago,
-        models.Order.status.in_(["paid", "shipped", "delivered"])
+        models.Order.status.in_([OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED])
     ).scalar() or 0
     
     # 最近30天统计
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     monthly_revenue = db.query(func.sum(models.Order.total_amount)).filter(
         models.Order.created_at >= thirty_days_ago,
-        models.Order.status.in_(["paid", "shipped", "delivered"])
+        models.Order.status.in_([OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED])
     ).scalar() or 0
     monthly_orders = db.query(models.Order).filter(models.Order.created_at >= thirty_days_ago).count()
     monthly_consultations = db.query(models.Consultation).filter(models.Consultation.created_at >= thirty_days_ago).count()
@@ -734,7 +703,7 @@ def update_expert(
     """更新专家信息"""
     expert = db.query(models.Expert).filter(models.Expert.id == expert_id).first()
     if not expert:
-        raise HTTPException(status_code=404, detail="专家未找到")
+        raise CommonErrors.EXPERT_NOT_FOUND
     
     for field, value in expert_data.items():
         if hasattr(expert, field):
@@ -753,7 +722,7 @@ def delete_expert(
     """删除专家"""
     expert = db.query(models.Expert).filter(models.Expert.id == expert_id).first()
     if not expert:
-        raise HTTPException(status_code=404, detail="专家未找到")
+        raise CommonErrors.EXPERT_NOT_FOUND
     
     expert_name = expert.name
     db.delete(expert)
@@ -826,9 +795,9 @@ def create_product(
     current_user: models.User = Depends(require_admin_role)
 ):
     """创建新商品"""
-    # 使用product.dict()来获取数据，并设置默认审核状态
-    product_data = product.dict()
-    product_data['audit_status'] = 'approved'  # 管理员创建的产品直接审核通过
+    # 使用model_dump(mode='json')来获取数据，确保枚举被序列化为字符串
+    product_data = product.model_dump(mode='json')
+    product_data['audit_status'] = AuditStatus.APPROVED  # 管理员创建的产品直接审核通过
     
     db_product = models.Product(**product_data)
     db.add(db_product)
@@ -848,10 +817,10 @@ def update_product(
     """更新商品信息"""
     product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not product:
-        raise HTTPException(status_code=404, detail="商品未找到")
+        raise CommonErrors.PRODUCT_NOT_FOUND
     
     # 更新商品信息
-    for field, value in product_update.dict(exclude_unset=True).items():
+    for field, value in product_update.model_dump(exclude_unset=True, mode='json').items():
         setattr(product, field, value)
     
     db.commit()
@@ -867,7 +836,7 @@ def delete_product(
     """删除商品"""
     product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not product:
-        raise HTTPException(status_code=404, detail="商品未找到")
+        raise CommonErrors.PRODUCT_NOT_FOUND
     
     product_name = product.name
     db.delete(product)
@@ -904,7 +873,7 @@ def get_order_detail(
     """获取订单详情"""
     order = db.query(models.Order).filter(models.Order.id == order_id).first()
     if not order:
-        raise HTTPException(status_code=404, detail="订单未找到")
+        raise CommonErrors.ORDER_NOT_FOUND
     return order
 
 @router.put("/orders/{order_id}/status")
@@ -920,7 +889,7 @@ def update_order_status(
     """更新订单状态"""
     order = db.query(models.Order).filter(models.Order.id == order_id).first()
     if not order:
-        raise HTTPException(status_code=404, detail="订单未找到")
+        raise CommonErrors.ORDER_NOT_FOUND
     
     old_status = order.status
     order.status = status
@@ -933,9 +902,9 @@ def update_order_status(
         order.admin_note = admin_note
     
     # 设置状态变更时间
-    if status == "shipped":
+    if status == OrderStatus.SHIPPED:
         order.shipped_at = datetime.now()
-    elif status == "delivered":
+    elif status == OrderStatus.DELIVERED:
         order.delivered_at = datetime.now()
     
     db.commit()
@@ -984,7 +953,7 @@ def get_consultation_detail(
         models.Consultation.id == consultation_id
     ).first()
     if not consultation:
-        raise HTTPException(status_code=404, detail="咨询记录未找到")
+        raise NotFoundException("咨询记录")
     return consultation
 
 @router.put("/consultations/{consultation_id}")
@@ -999,7 +968,7 @@ def update_consultation(
         models.Consultation.id == consultation_id
     ).first()
     if not consultation:
-        raise HTTPException(status_code=404, detail="咨询记录未找到")
+        raise NotFoundException("咨询记录")
     
     for field, value in consultation_data.items():
         if hasattr(consultation, field):
@@ -1025,7 +994,7 @@ def get_consultation_messages(
 
 # ====== 用户管理 ======
 
-@router.get("/users", response_model=List[schemas.User])
+@router.get("/users")
 def get_all_users(
     skip: int = 0,
     limit: int = 100,
@@ -1033,8 +1002,12 @@ def get_all_users(
     current_user: models.User = Depends(require_admin_role)
 ):
     """获取所有用户"""
+    from app.core.response import ApiResponse, user_to_dict
+    
     users = db.query(models.User).offset(skip).limit(limit).all()
-    return users
+    user_list = [user_to_dict(user) for user in users]
+    
+    return {"success": True, "data": user_list, "message": "用户列表获取成功"}
 
 @router.put("/users/{user_id}/role")
 def update_user_role(
@@ -1046,10 +1019,7 @@ def update_user_role(
     """更新用户权限"""
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+        raise CommonErrors.USER_NOT_FOUND
     
     user.is_admin = is_admin
     db.commit()
@@ -1262,10 +1232,7 @@ def create_backup(
             "created_at": datetime.now().isoformat()
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"备份创建失败: {str(e)}"
-        )
+        raise DatabaseException(f"备份创建失败: {str(e)}")
 
 @router.get("/system/logs")
 def get_system_logs(
@@ -1289,7 +1256,277 @@ def get_system_logs(
             "showing_lines": len(recent_lines)
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"读取日志失败: {str(e)}"
+        raise DatabaseException(f"读取日志失败: {str(e)}")
+
+# ====== 审核管理 ======
+
+class AuditRequest(BaseModel):
+    """审核请求模型"""
+    action: str  # approve, reject, publish, offline
+    reason: Optional[str] = None  # 审核意见
+    notes: Optional[str] = None   # 备注
+
+@router.get("/audit/pending")
+def get_pending_audits(
+    entity_type: Optional[str] = None,  # course, expert, product
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role)
+):
+    """获取待审核列表"""
+    from app.core.response import ApiResponse
+    
+    try:
+        result = {}
+        
+        # 确定要查询的实体类型
+        entity_types = [entity_type] if entity_type else ['course', 'expert', 'product']
+        
+        for entity in entity_types:
+            if entity == 'course':
+                items = db.query(models.Course).filter(
+                    models.Course.audit_status == AuditStatus.PENDING
+                ).offset(skip).limit(limit).all()
+            elif entity == 'expert':
+                items = db.query(models.Expert).filter(
+                    models.Expert.audit_status == AuditStatus.PENDING
+                ).offset(skip).limit(limit).all()
+            elif entity == 'product':
+                items = db.query(models.Product).filter(
+                    models.Product.audit_status == AuditStatus.PENDING
+                ).offset(skip).limit(limit).all()
+            else:
+                continue
+                
+            # 转换为字典格式，便于前端使用
+            items_data = []
+            for item in items:
+                item_data = {
+                    'id': item.id,
+                    'title': getattr(item, 'title', None) or getattr(item, 'name', '未知'),
+                    'submitted_by': item.submitted_by,
+                    'submitted_at': item.submitted_at.isoformat() if item.submitted_at else None,
+                    'audit_status': item.audit_status.value,
+                    'created_at': item.created_at.isoformat() if item.created_at else None
+                }
+                
+                # 添加实体特有字段
+                if entity == 'course':
+                    item_data.update({
+                        'category': item.category.value,
+                        'instructor': item.instructor,
+                        'price': float(item.price) if item.price else 0
+                    })
+                elif entity == 'expert':
+                    item_data.update({
+                        'category': item.category.value,
+                        'level': item.level.value,
+                        'hospital_affiliation': item.hospital_affiliation
+                    })
+                elif entity == 'product':
+                    item_data.update({
+                        'category': item.category.value,
+                        'price': float(item.price) if item.price else 0,
+                        'stock_quantity': item.stock_quantity
+                    })
+                
+                items_data.append(item_data)
+            
+            result[entity] = items_data
+        
+        return ApiResponse.success(result, "待审核列表获取成功")
+        
+    except Exception as e:
+        return ApiResponse.error(f"获取待审核列表失败: {str(e)}", 500)
+
+@router.post("/audit/{entity_type}/{entity_id}")
+def perform_audit(
+    entity_type: str,
+    entity_id: int,
+    audit_request: AuditRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role)
+):
+    """执行审核操作"""
+    from app.core.response import ApiResponse
+    
+    try:
+        # 验证实体类型
+        if entity_type not in ['course', 'expert', 'product']:
+            return ApiResponse.error("不支持的实体类型", 400)
+        
+        # 获取实体模型
+        model_map = {
+            'course': models.Course,
+            'expert': models.Expert,
+            'product': models.Product
+        }
+        
+        Model = model_map[entity_type]
+        entity = db.query(Model).filter(Model.id == entity_id).first()
+        
+        if not entity:
+            return ApiResponse.error(f"{entity_type} 不存在", 404)
+        
+        # 获取当前状态
+        old_status = entity.audit_status
+        
+        # 状态转换逻辑
+        if audit_request.action == 'approve':
+            if old_status != AuditStatus.PENDING:
+                return ApiResponse.error("只能审核待审核状态的项目", 400)
+            new_status = AuditStatus.APPROVED
+            
+        elif audit_request.action == 'reject':
+            if old_status != AuditStatus.PENDING:
+                return ApiResponse.error("只能审核待审核状态的项目", 400)
+            new_status = AuditStatus.REJECTED
+            
+        elif audit_request.action == 'publish':
+            if old_status != AuditStatus.APPROVED:
+                return ApiResponse.error("只能发布已通过审核的项目", 400)
+            new_status = AuditStatus.PUBLISHED
+            
+        elif audit_request.action == 'offline':
+            if old_status != AuditStatus.PUBLISHED:
+                return ApiResponse.error("只能下架已发布的项目", 400)
+            new_status = AuditStatus.OFFLINE
+            
+        else:
+            return ApiResponse.error("无效的审核操作", 400)
+        
+        # 更新实体状态
+        entity.audit_status = new_status
+        entity.reviewed_by = current_user.username
+        entity.reviewed_at = datetime.now()
+        if audit_request.notes:
+            entity.audit_notes = audit_request.notes
+        
+        # 创建审核日志
+        audit_log = models.AuditLog(
+            entity_type=entity_type,
+            entity_id=entity_id,
+            entity_title=getattr(entity, 'title', None) or getattr(entity, 'name', '未知'),
+            action=audit_request.action,
+            old_status=old_status.value,
+            new_status=new_status.value,
+            operator_id=current_user.id,
+            operator_name=current_user.username,
+            operator_role=current_user.role.value,
+            reason=audit_request.reason,
+            attachment={'notes': audit_request.notes} if audit_request.notes else None
         )
+        
+        db.add(audit_log)
+        db.commit()
+        db.refresh(entity)
+        
+        # 记录管理员操作日志
+        log_admin_action(
+            current_user,
+            f"审核{entity_type}",
+            f"ID:{entity_id}",
+            f"{old_status.value} -> {new_status.value}"
+        )
+        
+        return ApiResponse.success({
+            'entity_id': entity_id,
+            'entity_type': entity_type,
+            'old_status': old_status.value,
+            'new_status': new_status.value,
+            'action': audit_request.action
+        }, "审核操作成功")
+        
+    except Exception as e:
+        db.rollback()
+        return ApiResponse.error(f"审核操作失败: {str(e)}", 500)
+
+@router.get("/audit/logs/{entity_type}/{entity_id}")
+def get_audit_logs(
+    entity_type: str,
+    entity_id: int,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role)
+):
+    """获取实体的审核历史"""
+    from app.core.response import ApiResponse
+    
+    try:
+        logs = db.query(models.AuditLog).filter(
+            models.AuditLog.entity_type == entity_type,
+            models.AuditLog.entity_id == entity_id
+        ).order_by(models.AuditLog.created_at.desc()).offset(skip).limit(limit).all()
+        
+        logs_data = []
+        for log in logs:
+            logs_data.append({
+                'id': log.id,
+                'action': log.action,
+                'action_description': log.action_description,
+                'old_status': log.old_status,
+                'new_status': log.new_status,
+                'operator_name': log.operator_name,
+                'operator_role': log.operator_role,
+                'reason': log.reason,
+                'attachment': log.attachment,
+                'created_at': log.created_at.isoformat()
+            })
+        
+        return ApiResponse.success(logs_data, "审核历史获取成功")
+        
+    except Exception as e:
+        return ApiResponse.error(f"获取审核历史失败: {str(e)}", 500)
+
+@router.get("/audit/stats")
+def get_audit_stats(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role)
+):
+    """获取审核统计数据"""
+    from app.core.response import ApiResponse
+    from sqlalchemy import func
+    
+    try:
+        stats = {}
+        
+        # 统计各实体类型的审核状态分布
+        for entity_type, Model in [('course', models.Course), ('expert', models.Expert), ('product', models.Product)]:
+            # 按状态统计数量
+            status_stats = db.query(
+                Model.audit_status,
+                func.count(Model.id)
+            ).group_by(Model.audit_status).all()
+            
+            stats[entity_type] = {}
+            for status, count in status_stats:
+                stats[entity_type][status.value] = count
+        
+        # 最近7天的审核活动
+        from datetime import timedelta
+        seven_days_ago = datetime.now() - timedelta(days=7)
+        
+        recent_logs = db.query(models.AuditLog).filter(
+            models.AuditLog.created_at >= seven_days_ago
+        ).all()
+        
+        recent_stats = {
+            'total_actions': len(recent_logs),
+            'by_action': {},
+            'by_operator': {}
+        }
+        
+        # 按操作类型统计
+        for log in recent_logs:
+            recent_stats['by_action'][log.action] = recent_stats['by_action'].get(log.action, 0) + 1
+            recent_stats['by_operator'][log.operator_name] = recent_stats['by_operator'].get(log.operator_name, 0) + 1
+        
+        return ApiResponse.success({
+            'entity_stats': stats,
+            'recent_activity': recent_stats
+        }, "审核统计获取成功")
+        
+    except Exception as e:
+        return ApiResponse.error(f"获取审核统计失败: {str(e)}", 500)

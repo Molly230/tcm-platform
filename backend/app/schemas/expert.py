@@ -4,14 +4,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from enum import Enum
-
-class ExpertCategory(str, Enum):
-    INTERNAL = "internal"  # 中医内科
-    GYNECOLOGY = "gynecology"  # 中医妇科
-    PEDIATRICS = "pediatrics"  # 中医儿科
-    ACUPUNCTURE = "acupuncture"  # 针灸推拿
-    HEALTH = "health"  # 中医养生
+from app.core.enums_v2 import ExpertCategory
 
 class ExpertBase(BaseModel):
     name: str

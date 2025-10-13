@@ -5,20 +5,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
-import enum
-
-class UserRole(str, enum.Enum):
-    USER = "USER"           # 普通用户
-    VIP = "VIP"            # VIP用户
-    DOCTOR = "DOCTOR"      # 医生
-    ADMIN = "ADMIN"        # 管理员
-    SUPER_ADMIN = "SUPER_ADMIN"  # 超级管理员
-
-class UserStatus(str, enum.Enum):
-    ACTIVE = "ACTIVE"      # 活跃
-    INACTIVE = "INACTIVE"  # 未激活
-    SUSPENDED = "SUSPENDED"  # 暂停
-    BANNED = "BANNED"      # 封禁
+from app.core.enums_v2 import UserRole, UserStatus
 
 class User(Base):
     __tablename__ = "users"
@@ -52,6 +39,7 @@ class User(Base):
 
     # 关系
     consultations = relationship("Consultation", back_populates="user")
+    cart = relationship("Cart", back_populates="user", uselist=False)
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', username='{self.username}')>"

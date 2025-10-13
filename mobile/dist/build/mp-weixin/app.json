@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/consultation/consultation",
+    "pages/expert-consultation/expert-consultation",
+    "pages/courses/courses",
+    "pages/about/about",
+    "pages/video-player/video-player"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "中医健康平台",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "usingComponents": {}
+}

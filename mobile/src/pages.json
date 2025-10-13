@@ -7,9 +7,57 @@
       }
     },
     {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/products/products",
+      "style": {
+        "navigationBarTitleText": "中药商城"
+      }
+    },
+    {
+      "path": "pages/product-detail/product-detail",
+      "style": {
+        "navigationBarTitleText": "商品详情"
+      }
+    },
+    {
+      "path": "pages/cart/cart",
+      "style": {
+        "navigationBarTitleText": "购物车"
+      }
+    },
+    {
+      "path": "pages/checkout/checkout",
+      "style": {
+        "navigationBarTitleText": "确认订单"
+      }
+    },
+    {
+      "path": "pages/payment/payment",
+      "style": {
+        "navigationBarTitleText": "支付订单"
+      }
+    },
+    {
+      "path": "pages/courses/courses",
+      "style": {
+        "navigationBarTitleText": "健康课程"
+      }
+    },
+    {
+      "path": "pages/course-detail/course-detail",
+      "style": {
+        "navigationBarTitleText": "课程详情"
+      }
+    },
+    {
       "path": "pages/consultation/consultation",
       "style": {
-        "navigationBarTitleText": "健康咨询"
+        "navigationBarTitleText": "AI问诊"
       }
     },
     {
@@ -19,15 +67,27 @@
       }
     },
     {
-      "path": "pages/courses/courses",
+      "path": "pages/assessment/assessment",
       "style": {
-        "navigationBarTitleText": "课程中心"
+        "navigationBarTitleText": "健康评估"
       }
     },
     {
-      "path": "pages/about/about",
+      "path": "pages/profile/profile",
       "style": {
-        "navigationBarTitleText": "关于我们"
+        "navigationBarTitleText": "个人中心"
+      }
+    },
+    {
+      "path": "pages/my-orders/my-orders",
+      "style": {
+        "navigationBarTitleText": "我的订单"
+      }
+    },
+    {
+      "path": "pages/my-courses/my-courses",
+      "style": {
+        "navigationBarTitleText": "我的课程"
       }
     },
     {
@@ -36,8 +96,42 @@
         "navigationBarTitleText": "视频播放",
         "navigationStyle": "custom"
       }
+    },
+    {
+      "path": "pages/about/about",
+      "style": {
+        "navigationBarTitleText": "关于我们"
+      }
     }
   ],
+  "tabBar": {
+    "color": "#666666",
+    "selectedColor": "#409EFF",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/products/products",
+        "text": "商城"
+      },
+      {
+        "pagePath": "pages/courses/courses",
+        "text": "课程"
+      },
+      {
+        "pagePath": "pages/consultation/consultation",
+        "text": "问诊"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
+  },
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "中医健康平台",

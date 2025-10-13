@@ -1,12 +1,21 @@
 <template>
   <div id="app">
-    <NavigationBar />
+    <NavigationBar v-if="!isAdminRoute" />
     <router-view />
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import NavigationBar from './components/NavigationBar.vue'
+
+const route = useRoute()
+
+// 计算是否为管理后台路由
+const isAdminRoute = computed(() => {
+  return route.path.startsWith('/admin')
+})
 </script>
 
 <style>

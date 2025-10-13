@@ -68,7 +68,7 @@
               <template #default="{ row }">
                 <el-button size="small" @click="viewProduct(row)">查看</el-button>
                 <el-button 
-                  v-if="row.audit_status === 'pending'"
+                  v-if="row.audit_status === 'PENDING' || row.audit_status === 'pending'"
                   size="small" 
                   type="success" 
                   @click="openAuditDialog(row, 'approve')"
@@ -76,7 +76,7 @@
                   通过
                 </el-button>
                 <el-button 
-                  v-if="row.audit_status === 'pending'"
+                  v-if="row.audit_status === 'PENDING' || row.audit_status === 'pending'"
                   size="small" 
                   type="warning" 
                   @click="openAuditDialog(row, 'revision')"
@@ -84,7 +84,7 @@
                   修改
                 </el-button>
                 <el-button 
-                  v-if="row.audit_status === 'pending'"
+                  v-if="row.audit_status === 'PENDING' || row.audit_status === 'pending'"
                   size="small" 
                   type="danger" 
                   @click="openAuditDialog(row, 'reject')"
@@ -212,6 +212,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageContainer from '../../components/PageContainer.vue'
+import { adminApi } from '../../utils/api'
 
 // 响应式数据
 const loading = ref(true)
@@ -252,23 +253,47 @@ const auditActionText = computed(() => {
 const loadProducts = async () => {
   loading.value = true
   try {
-    const params = new URLSearchParams({
-      skip: ((currentPage.value - 1) * pageSize.value).toString(),
-      limit: pageSize.value.toString()
-    })
+    // 使用新的审核API获取待审核产品
+    const result = await adminApi.audit.getPending('product')
     
-    if (filterStatus.value) params.append('status', filterStatus.value)
-    if (filterSubmitter.value) params.append('submitter', filterSubmitter.value)
-
-    const response = await fetch(`/api/products/pending?${params}`)
-    if (response.ok) {
-      const data = await response.json()
-      products.value = data
-      total.value = data.length // 实际应该从后端获取总数
+    if (result.success && result.data) {
+      // 新API返回的数据结构：{ course: [], expert: [], product: [] }
+      let productList = result.data.product || []
+      
+      // 应用前端过滤（可以考虑后端支持这些过滤）
+      if (filterStatus.value) {
+        const statusMap = {
+          'pending': 'PENDING',
+          'approved': 'APPROVED', 
+          'rejected': 'REJECTED'
+        }
+        const targetStatus = statusMap[filterStatus.value]
+        if (targetStatus) {
+          productList = productList.filter(p => p.audit_status === targetStatus)
+        }
+      }
+      
+      if (filterSubmitter.value) {
+        productList = productList.filter(p => 
+          p.submitted_by?.toLowerCase().includes(filterSubmitter.value.toLowerCase())
+        )
+      }
+      
+      // 分页处理（前端分页，后端可以优化）
+      const start = (currentPage.value - 1) * pageSize.value
+      const end = start + pageSize.value
+      products.value = productList.slice(start, end)
+      total.value = productList.length
+    } else {
+      ElMessage.error(result.message || '获取产品列表失败')
+      products.value = []
+      total.value = 0
     }
   } catch (error) {
     console.error('加载产品失败:', error)
     ElMessage.error('加载产品失败')
+    products.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -276,15 +301,17 @@ const loadProducts = async () => {
 
 const loadStats = async () => {
   try {
-    // 统计待审核数量
-    const pendingResponse = await fetch('/api/products/pending')
-    if (pendingResponse.ok) {
-      const pendingData = await pendingResponse.json()
-      pendingCount.value = pendingData.length
-    }
+    // 使用新的审核统计API
+    const result = await adminApi.audit.getStats()
     
-    // 今日审核数量 - 实际应用中需要后端提供这个API
-    todayAuditCount.value = 0
+    if (result.success && result.data) {
+      const stats = result.data
+      // 待审核产品数量
+      pendingCount.value = stats.entity_stats?.product?.PENDING || 0
+      
+      // 最近7天的审核数量
+      todayAuditCount.value = stats.recent_activity?.total_actions || 0
+    }
   } catch (error) {
     console.error('加载统计数据失败:', error)
   }
@@ -310,25 +337,31 @@ const submitAudit = async () => {
 
   auditing.value = true
   try {
-    const response = await fetch(`/api/products/${selectedProduct.value.id}/audit`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: auditAction.value,
-        notes: auditForm.value.notes
-      })
-    })
+    // 映射前端action到后端action
+    const actionMap = {
+      'approve': 'approve',
+      'reject': 'reject', 
+      'revision': 'reject'  // 前端的"要求修改"映射到后端的reject
+    }
+    
+    const backendAction = actionMap[auditAction.value] || auditAction.value
+    
+    // 使用新的审核API
+    const result = await adminApi.audit.performAudit(
+      'product',
+      selectedProduct.value.id,
+      backendAction,
+      auditForm.value.notes, // reason
+      auditForm.value.notes  // notes
+    )
 
-    if (response.ok) {
+    if (result.success) {
       ElMessage.success(`产品${auditActionText.value}成功`)
       auditDialogVisible.value = false
       loadProducts()
       loadStats()
     } else {
-      const error = await response.json()
-      ElMessage.error(error.detail || '审核失败')
+      ElMessage.error(result.message || '审核失败')
     }
   } catch (error) {
     console.error('审核失败:', error)
@@ -346,20 +379,34 @@ const handleAuditDialogClose = () => {
 
 const getStatusType = (status: string) => {
   const map: Record<string, string> = {
-    pending: 'warning',
-    approved: 'success',
-    rejected: 'danger',
-    revision: 'info'
+    'DRAFT': 'info',
+    'PENDING': 'warning', 
+    'APPROVED': 'success',
+    'REJECTED': 'danger',
+    'PUBLISHED': 'primary',
+    'OFFLINE': 'info',
+    // 向后兼容旧状态
+    'pending': 'warning',
+    'approved': 'success',
+    'rejected': 'danger',
+    'revision': 'info'
   }
   return map[status] || ''
 }
 
 const getStatusText = (status: string) => {
   const map: Record<string, string> = {
-    pending: '待审核',
-    approved: '已通过',
-    rejected: '已拒绝',
-    revision: '需修改'
+    'DRAFT': '草稿',
+    'PENDING': '待审核',
+    'APPROVED': '已通过', 
+    'REJECTED': '已拒绝',
+    'PUBLISHED': '已发布',
+    'OFFLINE': '已下架',
+    // 向后兼容旧状态
+    'pending': '待审核',
+    'approved': '已通过',
+    'rejected': '已拒绝',
+    'revision': '需修改'
   }
   return map[status] || status
 }

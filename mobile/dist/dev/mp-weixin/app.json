@@ -1,0 +1,56 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/login/login",
+    "pages/products/products",
+    "pages/product-detail/product-detail",
+    "pages/cart/cart",
+    "pages/checkout/checkout",
+    "pages/payment/payment",
+    "pages/courses/courses",
+    "pages/course-detail/course-detail",
+    "pages/consultation/consultation",
+    "pages/expert-consultation/expert-consultation",
+    "pages/assessment/assessment",
+    "pages/profile/profile",
+    "pages/my-orders/my-orders",
+    "pages/my-courses/my-courses",
+    "pages/video-player/video-player",
+    "pages/about/about"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "中医健康平台",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#666666",
+    "selectedColor": "#409EFF",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/products/products",
+        "text": "商城"
+      },
+      {
+        "pagePath": "pages/courses/courses",
+        "text": "课程"
+      },
+      {
+        "pagePath": "pages/consultation/consultation",
+        "text": "问诊"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
+  },
+  "usingComponents": {}
+}
