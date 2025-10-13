@@ -346,8 +346,8 @@ python recreate_db.py               # 完全重建数据库（如果存在）
   - 配置文件：`PINGPP_CONFIG.md` - 完整配置指南
   - API端点：`/api/reliable-pay/` - 支付服务接口
   - 智能降级：配置错误时自动切换到模拟支付
-  - 测试密钥：`[REDACTED_TEST_KEY]` (已配置)
-  - App ID：`[REDACTED_APP_ID]` (已配置)
+  - 测试密钥：见 `.env.example` 文件
+  - App ID：见 `.env.example` 文件
   - **重要**: 因Python 3.13兼容性问题，目前使用模拟+真实配置混合模式
 
 ### 支付测试命令
