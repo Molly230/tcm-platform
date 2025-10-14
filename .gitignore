@@ -15,6 +15,9 @@ frontend/dist/
 frontend/node_modules/
 mobile/node_modules/
 mobile/unpackage/
+mobile/dist/
+dist/
+build/
 
 # 系统文件
 *.log

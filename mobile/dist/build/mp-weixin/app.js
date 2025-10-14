@@ -1,1 +1,0 @@
-"use strict";Object.defineProperty(exports,Symbol.toStringTag,{value:"Module"});const e=require("./common/vendor.js");Math;const r={name:"App"};if(!Array){e.resolveComponent("router-view")()}const t=e._export_sfc(r,[["render",function(e,r,t,o,n,p){return{}}]]);function o(){return{app:e.createSSRApp(t)}}o().app.mount("#app"),exports.createApp=o;
