@@ -52,3 +52,15 @@ backend/*.db*
 *.pem
 *.key
 backup/
+
+# 临时和测试文件
+nul
+NUL
+*.tmp
+test_*.png
+test_*.jpg
+git_tracked_files.txt
+GIT_FILES_CHECKLIST.md
+DEPLOY_NOW.sh
+create_upload_package.sh
+.env.production
