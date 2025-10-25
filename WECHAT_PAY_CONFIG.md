@@ -34,11 +34,11 @@
 
 ```bash
 # 微信支付配置
-WECHAT_APP_ID=wx8ef971d8efa87ffb          # 微信公众号AppID
-WECHAT_MCH_ID=1727330435                 # 微信商户号
-WECHAT_API_KEY=12d5pNFwIsZcMGgEgbU0XfO1NWtFIe1g  # API密钥（32位）
-WECHAT_NOTIFY_URL=https://tcmlife.top/api/wechat-pay/notify  # 支付回调地址
-WECHAT_H5_DOMAIN=tcmlife.top             # H5支付域名
+WECHAT_APP_ID=wxXXXXXXXXXXXXXXXX          # 微信公众号AppID（替换为你的真实AppID）
+WECHAT_MCH_ID=1234567890                 # 微信商户号（替换为你的真实商户号）
+WECHAT_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  # API密钥（32位，替换为你的真实密钥）
+WECHAT_NOTIFY_URL=https://your-domain.com/api/wechat-pay/notify  # 支付回调地址
+WECHAT_H5_DOMAIN=your-domain.com         # H5支付域名
 WECHAT_PAYMENT_TYPE=JSAPI                # 默认支付类型：NATIVE/H5/JSAPI
 
 # 模拟模式（开发测试用）
@@ -195,7 +195,7 @@ WECHAT_MOCK_MODE=true                    # true启用模拟，false使用真实�
     "amount": 168.80,
     "prepay_id": "wx2024010100000001",
     "jsapi_params": {
-      "appId": "wx8ef971d8efa87ffb",
+      "appId": "wxXXXXXXXXXXXXXX",
       "timeStamp": "1704067200",
       "nonceStr": "abc123",
       "package": "prepay_id=wx2024010100000001",
@@ -249,11 +249,11 @@ Authorization: Bearer {token}
   "version": "v1.0",
   "supported_types": ["NATIVE", "H5", "JSAPI"],
   "config": {
-    "app_id": "wx8ef971***",
-    "mch_id": "1727330435",
+    "app_id": "wxXXXXXXXXXXXXXX",
+    "mch_id": "1234567890",
     "payment_type": "JSAPI",
-    "notify_url": "https://tcmlife.top/api/wechat-pay/notify",
-    "h5_domain": "tcmlife.top",
+    "notify_url": "https://your-domain.com/api/wechat-pay/notify",
+    "h5_domain": "your-domain.com",
     "mock_mode": true
   }
 }
@@ -311,8 +311,8 @@ Content-Type: application/xml
 <xml>
   <return_code><![CDATA[SUCCESS]]></return_code>
   <return_msg><![CDATA[OK]]></return_msg>
-  <appid><![CDATA[wx8ef971d8efa87ffb]]></appid>
-  <mch_id><![CDATA[1727330435]]></mch_id>
+  <appid><![CDATA[wxXXXXXXXXXXXXXX]]></appid>
+  <mch_id><![CDATA[1234567890]]></mch_id>
   <nonce_str><![CDATA[abc123]]></nonce_str>
   <sign><![CDATA[C380BEC2BFD727A4B6845133519F3AD6]]></sign>
   <result_code><![CDATA[SUCCESS]]></result_code>
