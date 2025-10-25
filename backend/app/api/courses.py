@@ -167,5 +167,46 @@ def mark_lesson_complete(
     
     # 这里可以添加实际的完成记录逻辑
     # 比如更新用户的学习进度等
-    
+
     return {"message": "课时标记完成", "lesson_id": lesson_id, "user_id": user_id}
+
+@router.post("/{course_id}/lessons", response_model=schemas.Lesson)
+def create_lesson(
+    course_id: int,
+    lesson: schemas.LessonCreate,
+    db: Session = Depends(get_db)
+):
+    """为课程创建新课时"""
+    # 验证课程是否存在
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise CommonErrors.COURSE_NOT_FOUND
+
+    # 创建课时
+    db_lesson = models.Lesson(
+        course_id=course_id,
+        **lesson.dict()
+    )
+    db.add(db_lesson)
+    db.commit()
+    db.refresh(db_lesson)
+    return db_lesson
+
+@router.put("/lessons/{lesson_id}", response_model=schemas.Lesson)
+def update_lesson(
+    lesson_id: int,
+    lesson_update: schemas.LessonUpdate,
+    db: Session = Depends(get_db)
+):
+    """更新课时信息"""
+    db_lesson = db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first()
+    if db_lesson is None:
+        raise NotFoundException("课时")
+
+    # 更新课时信息
+    for field, value in lesson_update.dict(exclude_unset=True).items():
+        setattr(db_lesson, field, value)
+
+    db.commit()
+    db.refresh(db_lesson)
+    return db_lesson

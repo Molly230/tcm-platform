@@ -44,7 +44,7 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
-const uploadUrl = 'http://localhost:8000/api/upload/image'
+const uploadUrl = 'http://localhost:8001/api/upload/image'
 const uploadedImageUrl = ref('')
 const fileInput = ref()
 const selectedFile = ref(null)
@@ -54,7 +54,7 @@ const manualResult = ref(null)
 const handleUploadSuccess = (response: any) => {
   console.log('Upload success:', response)
   if (response.success && response.file_url) {
-    uploadedImageUrl.value = `http://localhost:8000${response.file_url}`
+    uploadedImageUrl.value = `http://localhost:8001${response.file_url}`
     ElMessage.success('图片上传成功!')
   } else {
     ElMessage.error('上传失败：' + (response.message || '未知错误'))
@@ -125,7 +125,7 @@ const testManualUpload = async () => {
     if (result.success) {
       ElMessage.success('手动上传成功!')
       if (result.file_url) {
-        uploadedImageUrl.value = `http://localhost:8000${result.file_url}`
+        uploadedImageUrl.value = `http://localhost:8001${result.file_url}`
       }
     } else {
       ElMessage.error('上传失败：' + (result.message || '未知错误'))

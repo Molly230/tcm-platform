@@ -80,7 +80,7 @@ const videoUrl = computed(() => {
   
   // 检查是否是本地上传的视频
   if (lesson.value.video_url.startsWith('/uploads/')) {
-    return `http://localhost:8000${lesson.value.video_url}`
+    return `${lesson.value.video_url}`
   }
   
   // 返回原始URL

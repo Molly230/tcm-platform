@@ -743,6 +743,7 @@ const saveCourse = async () => {
       }
       
       ElMessage.success('课程更新成功')
+      // 如果有视频URL，创建或更新课时      if (courseForm.value.video_url) {        createOrUpdateLesson(editingCourseId.value)      }
     } else {
       // 创建新课程 - 调用后端API
       const courseData = {
@@ -813,6 +814,7 @@ const saveCourse = async () => {
       // 更新本地数据
       courses.value.unshift(newCourse)
       ElMessage.success('课程创建成功！')
+      // 如果有视频URL，创建或更新课时      if (courseForm.value.video_url) {        createOrUpdateLesson(editingCourseId.value)      }
     }
     
     // 更新筛选后的课程列表
@@ -869,6 +871,7 @@ const togglePublishStatus = async (course: any) => {
     }
 
     ElMessage.success(`课程${actionText}成功`)
+      // 如果有视频URL，创建或更新课时      if (courseForm.value.video_url) {        createOrUpdateLesson(editingCourseId.value)      }
   } catch (error: any) {
     console.error(`课程${actionText}失败:`, error)
     ElMessage.error(error.message || `课程${actionText}失败`)
@@ -915,6 +918,7 @@ const handleDeleteCourse = async (courseId: number) => {
     }
     
     ElMessage.success('课程删除成功')
+      // 如果有视频URL，创建或更新课时      if (courseForm.value.video_url) {        createOrUpdateLesson(editingCourseId.value)      }
     await loadCourses()  // 重新加载课程列表
   } catch (error) {
     if (error.message && error.message !== 'cancel') {
@@ -980,15 +984,16 @@ const handleVideoSuccess = (response: any, file: any) => {
   
   // 根据admin API的响应格式设置视频URL
   if (response.upload_url) {
-    courseForm.value.video_url = `http://localhost:8000${response.upload_url}`
+    courseForm.value.video_url = `http://localhost:8001${response.upload_url}`
   } else if (response.file_path) {
-    courseForm.value.video_url = `http://localhost:8000/${response.file_path.replace(/\\/g, '/')}`
+    courseForm.value.video_url = `http://localhost:8001/${response.file_path.replace(/\\/g, '/')}`
   }
   
   courseForm.value.video_name = response.original_filename || file.name
   courseForm.value.video_size = response.file_size || file.size || 0
   
   ElMessage.success('视频上传成功!')
+      // 如果有视频URL，创建或更新课时      if (courseForm.value.video_url) {        createOrUpdateLesson(editingCourseId.value)      }
 }
 
 const handleVideoError = (error: any) => {
@@ -1041,6 +1046,7 @@ const removeVideo = async () => {
     courseForm.value.video_size = 0
     
     ElMessage.success('视频已删除')
+      // 如果有视频URL，创建或更新课时      if (courseForm.value.video_url) {        createOrUpdateLesson(editingCourseId.value)      }
   } catch {
     // 用户取消删除
   }
@@ -1609,3 +1615,51 @@ onMounted(() => {
   }
 }
 </style>
+// 创建或更新课时
+const createOrUpdateLesson = async (courseId) => {
+  try {
+    const lessonData = {
+      title: courseForm.value.title + ' - 主课',
+      description: courseForm.value.description || '课程主要内容',
+      order: 1,
+      duration: 1800, // 默认30分钟
+      video_url: courseForm.value.video_url,
+      is_free: courseForm.value.is_free,
+      video_id: courseForm.value.video_id || null,
+      cover_url: courseForm.value.cover_url || null
+    }
+    
+    // 检查是否已有课时
+    const lessonsResponse = await fetch()
+    if (lessonsResponse.ok) {
+      const existingLessons = await lessonsResponse.json()
+      
+      if (existingLessons.length > 0) {
+        // 更新第一个课时
+        await fetch(, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': 
+          },
+          body: JSON.stringify(lessonData)
+        })
+        console.log('课时更新成功')
+      } else {
+        // 创建新课时
+        await fetch(, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': 
+          },
+          body: JSON.stringify(lessonData)
+        })
+        console.log('课时创建成功')
+      }
+    }
+  } catch (error) {
+    console.error('创建/更新课时失败:', error)
+    // 不阻止课程保存，只记录错误
+  }
+}
