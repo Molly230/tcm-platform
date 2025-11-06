@@ -68,6 +68,7 @@ class Order(Base):
 
     # 关系
     items = relationship("OrderItem", back_populates="order")
+    shipping = relationship("Shipping", back_populates="order", uselist=False)  # 一对一关系
 
     def __repr__(self):
         return f"<Order(id={self.id}, order_number='{self.order_number}', status='{self.status}')>"

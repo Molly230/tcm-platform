@@ -53,7 +53,11 @@ class Settings(BaseSettings):
     WECHAT_H5_DOMAIN: str = os.getenv("WECHAT_H5_DOMAIN", "")
     WECHAT_PAYMENT_TYPE: str = os.getenv("WECHAT_PAYMENT_TYPE", "JSAPI")
     WECHAT_MOCK_MODE: bool = os.getenv("WECHAT_MOCK_MODE", "false").lower() == "true"
-    
+
+    # 快递鸟物流查询API配置
+    KDNIAO_EBUSINESS_ID: str = os.getenv("KDNIAO_EBUSINESS_ID", "")
+    KDNIAO_APP_KEY: str = os.getenv("KDNIAO_APP_KEY", "")
+
     # 服务器配置
     SERVER_HOST: str = os.getenv("SERVER_HOST", "http://localhost:8000")
     

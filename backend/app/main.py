@@ -36,6 +36,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
+# 初始化快递鸟服务@app.on_event("startup")async def startup_event():    from app.services.kdniao_service import init_kdniao_service    from app.core.config import settings        if settings.KDNIAO_EBUSINESS_ID and settings.KDNIAO_APP_KEY:        try:            init_kdniao_service(                ebusiness_id=settings.KDNIAO_EBUSINESS_ID,                app_key=settings.KDNIAO_APP_KEY            )            logger.info("✅ 快递鸟服务初始化成功")        except Exception as e:            logger.warning(f"⚠️ 快递鸟服务初始化失败: {e}")    else:        logger.warning("⚠️ 快递鸟配置未完整设置，物流查询功能将不可用")
     title=settings.PROJECT_NAME,
     description=settings.PROJECT_DESCRIPTION,
     version=settings.PROJECT_VERSION

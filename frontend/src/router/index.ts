@@ -24,6 +24,7 @@ import CourseManagement from '../views/admin/CourseManagement.vue'
 import ExpertManagement from '../views/admin/ExpertManagement.vue'
 import ProductManagement from '../views/admin/ProductManagement.vue'
 import OrderManagement from '../views/admin/OrderManagement.vue'
+import ShippingManagement from '../views/admin/ShippingManagement.vue'
 import ConsultationManagement from '../views/admin/ConsultationManagement.vue'
 import DataExport from '../views/admin/DataExport.vue'
 import SystemSettings from '../views/admin/SystemSettings.vue'
@@ -32,6 +33,7 @@ import ProductSubmit from '../views/ProductSubmit.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import MyView from '../views/MyView.vue'
+import MyOrdersView from '../views/MyOrdersView.vue'
 import TestUpload from '../views/TestUpload.vue'
 import AssessmentView from '../views/AssessmentView.vue'
 import InsomniaAssessmentView from '../views/InsomniaAssessmentView.vue'
@@ -39,6 +41,7 @@ import HealthCognitionAssessment from '../views/HealthCognitionAssessment.vue'
 import QAView from '../views/QAView.vue'
 import HealthMisconceptionsView from '../views/HealthMisconceptionsView.vue'
 import ThreeLayerSystemView from '../views/ThreeLayerSystemView.vue'
+import LearningCenterView from '../views/LearningCenterView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,6 +60,11 @@ const router = createRouter({
       path: '/about',
       name: 'about',
       component: AboutView
+    },
+    {
+      path: '/learning-center',
+      name: 'learning-center',
+      component: LearningCenterView
     },
     {
       path: '/courses',
@@ -205,6 +213,11 @@ const router = createRouter({
           component: OrderManagement
         },
         {
+          path: 'shipping',
+          name: 'admin-shipping',
+          component: ShippingManagement
+        },
+        {
           path: 'consultations',
           name: 'admin-consultations',
           component: ConsultationManagement
@@ -225,6 +238,12 @@ const router = createRouter({
       path: '/my',
       name: 'my',
       component: MyView
+    },
+    {
+      path: '/my/orders',
+      name: 'my-orders',
+      component: MyOrdersView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/product-submit',

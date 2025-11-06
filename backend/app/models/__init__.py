@@ -7,6 +7,7 @@ from .consultation import Consultation, ConsultationMessage, ConsultationStatus,
 from .course import Course, Lesson, Enrollment, WatchRecord, VideoStatus
 from .expert import Expert, ExpertSchedule, ExpertReview
 from .product import Product, Order, OrderItem
+from .shipping import Shipping
 from .cart import Cart, CartItem
 from .audit_log import AuditLog
 
@@ -16,6 +17,7 @@ __all__ = [
     "Course", "Lesson", "Enrollment", "WatchRecord", "VideoStatus",
     "Expert", "ExpertSchedule", "ExpertReview",
     "Product", "Order", "OrderItem",
+    "Shipping",
     "Cart", "CartItem",
     "AuditLog"
 ]

@@ -83,6 +83,10 @@
               <el-icon><Document /></el-icon>
               <template #title>订单管理</template>
             </el-menu-item>
+            <el-menu-item index="/admin/shipping">
+              <el-icon><Van /></el-icon>
+              <template #title>配送管理</template>
+            </el-menu-item>
             <el-menu-item index="/admin/consultations">
               <el-icon><ChatLineRound /></el-icon>
               <template #title>咨询管理</template>
@@ -135,9 +139,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { 
+import {
   House, Reading, User, Setting, Download, Tools, Notebook, Document,
-  UserFilled, ShoppingCart, ChatLineRound, ArrowDown, Expand, Fold, DocumentChecked
+  UserFilled, ShoppingCart, ChatLineRound, ArrowDown, Expand, Fold, DocumentChecked, Van
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 

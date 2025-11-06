@@ -132,10 +132,18 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="scope">
             <el-button size="small" @click="viewOrder(scope.row)">
               详情
+            </el-button>
+            <el-button
+              v-if="scope.row.status === 'PAID'"
+              size="small"
+              type="warning"
+              @click="handleShipOrder(scope.row)"
+            >
+              📦 发货
             </el-button>
             <el-dropdown @command="(cmd) => handleOrderAction(cmd, scope.row)">
               <el-button size="small" type="primary">
@@ -274,6 +282,13 @@
         <el-button @click="showDetailDialog = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 发货对话框 -->
+    <ShipOrderDialog
+      v-model:visible="showShipDialog"
+      :order="orderToShip"
+      @success="handleShipSuccess"
+    />
   </div>
 </template>
 
@@ -281,6 +296,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Download, Refresh, Search, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import ShipOrderDialog from '@/components/ShipOrderDialog.vue'
 
 interface OrderItem {
   id: number
@@ -314,6 +330,10 @@ const statusFilter = ref('')
 
 const showDetailDialog = ref(false)
 const currentOrder = ref<Order | null>(null)
+
+// 发货对话框相关
+const showShipDialog = ref(false)
+const orderToShip = ref<Order | null>(null)
 
 // 统计数据
 const stats = computed(() => {
@@ -405,6 +425,18 @@ const handleOrderAction = async (status: string, order: Order) => {
       ElMessage.error('更新失败：' + (error.message || '网络错误'))
     }
   }
+}
+
+// 发货处理
+const handleShipOrder = (order: Order) => {
+  orderToShip.value = order
+  showShipDialog.value = true
+}
+
+// 发货成功回调
+const handleShipSuccess = () => {
+  loadOrders()
+  showShipDialog.value = false
 }
 
 // 搜索

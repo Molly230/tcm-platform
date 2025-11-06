@@ -101,7 +101,7 @@ const goToSection = (section: string) => {
       ElMessage.info('个人资料功能开发中...')
       break
     case 'orders':
-      ElMessage.info('我的订单功能开发中...')
+      router.push('/my/orders')
       break
     case 'favorites':
       ElMessage.info('我的收藏功能开发中...')

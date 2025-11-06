@@ -195,6 +195,42 @@ class EnumConfig:
                 next_states=[], color="#909399"),
     ]
 
+    # 配送状态
+    SHIPPING_STATUSES = [
+        EnumItem("PENDING", "待发货", "Pending Shipment", "等待发货", 1,
+                next_states=["PREPARING", "CANCELLED"], color="#E6A23C"),
+        EnumItem("PREPARING", "备货中", "Preparing", "正在备货", 2,
+                next_states=["SHIPPED", "CANCELLED"], color="#409EFF"),
+        EnumItem("SHIPPED", "已发货", "Shipped", "商品已发货", 3,
+                next_states=["IN_TRANSIT"], color="#67C23A"),
+        EnumItem("IN_TRANSIT", "运输中", "In Transit", "商品运输中", 4,
+                next_states=["OUT_FOR_DELIVERY", "FAILED"], color="#409EFF"),
+        EnumItem("OUT_FOR_DELIVERY", "派送中", "Out for Delivery", "正在派送", 5,
+                next_states=["DELIVERED", "FAILED"], color="#67C23A"),
+        EnumItem("DELIVERED", "已送达", "Delivered", "已送达收货人", 6,
+                next_states=[], color="#67C23A"),
+        EnumItem("FAILED", "配送失败", "Failed", "配送失败", 7,
+                next_states=["SHIPPED", "RETURNED"], color="#F56C6C"),
+        EnumItem("RETURNED", "已退回", "Returned", "已退回发货地", 8,
+                next_states=[], color="#909399"),
+        EnumItem("CANCELLED", "已取消", "Cancelled", "配送已取消", 9,
+                next_states=[], color="#C0C4CC"),
+    ]
+
+    # 物流公司（快递鸟支持的主流快递）
+    COURIER_COMPANIES = [
+        EnumItem("SF", "顺丰速运", "SF Express", "顺丰速运", 1, color="#409EFF"),
+        EnumItem("ZTO", "中通快递", "ZTO Express", "中通快递", 2, color="#67C23A"),
+        EnumItem("YTO", "圆通速递", "YTO Express", "圆通速递", 3, color="#E6A23C"),
+        EnumItem("STO", "申通快递", "STO Express", "申通快递", 4, color="#F56C6C"),
+        EnumItem("YD", "韵达快递", "Yunda Express", "韵达快递", 5, color="#909399"),
+        EnumItem("JTSD", "极兔速递", "J&T Express", "极兔速递", 6, color="#606266"),
+        EnumItem("JD", "京东物流", "JD Logistics", "京东物流", 7, color="#C0C4CC"),
+        EnumItem("EMS", "邮政EMS", "China EMS", "中国邮政EMS", 8, color="#67C23A"),
+        EnumItem("DBKD", "德邦快递", "Deppon", "德邦快递", 9, color="#409EFF"),
+        EnumItem("OTHER", "其他", "Other", "其他物流公司", 99, color="#909399"),
+    ]
+
 
 class EnumManager:
     """枚举管理器 - 提供枚举操作方法"""
@@ -217,6 +253,8 @@ class EnumManager:
             "CONSULTATION_TYPE": EnumConfig.CONSULTATION_TYPES,
             "CONSULTATION_STATUS": EnumConfig.CONSULTATION_STATUSES,
             "PAYMENT_STATUS": EnumConfig.PAYMENT_STATUSES,
+            "SHIPPING_STATUS": EnumConfig.SHIPPING_STATUSES,
+            "COURIER_COMPANY": EnumConfig.COURIER_COMPANIES,
         }
         return enum_map.get(enum_type, [])
     
@@ -387,3 +425,30 @@ class PaymentStatus(str, Enum):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
     REFUNDED = "REFUNDED"
+
+
+class ShippingStatus(str, Enum):
+    """配送状态"""
+    PENDING = "PENDING"
+    PREPARING = "PREPARING"
+    SHIPPED = "SHIPPED"
+    IN_TRANSIT = "IN_TRANSIT"
+    OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY"
+    DELIVERED = "DELIVERED"
+    FAILED = "FAILED"
+    RETURNED = "RETURNED"
+    CANCELLED = "CANCELLED"
+
+
+class CourierCompany(str, Enum):
+    """物流公司"""
+    SF = "SF"  # 顺丰速运
+    ZTO = "ZTO"  # 中通快递
+    YTO = "YTO"  # 圆通速递
+    STO = "STO"  # 申通快递
+    YD = "YD"  # 韵达快递
+    JTSD = "JTSD"  # 极兔速递
+    JD = "JD"  # 京东物流
+    EMS = "EMS"  # 邮政EMS
+    DBKD = "DBKD"  # 德邦快递
+    OTHER = "OTHER"  # 其他

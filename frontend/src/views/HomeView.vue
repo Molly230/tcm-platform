@@ -105,7 +105,7 @@
         <div class="cta-content">
           <div class="cta-grid">
             <div class="cta-item">
-              <el-button type="primary" size="large" class="primary-cta" @click="$router.push('/insomnia-assessment')">
+              <el-button type="primary" size="large" class="primary-cta" @click="$router.push('/solutions')">
                 <span class="button-icon">🌟</span>
                 评估你的体质
               </el-button>

@@ -3,7 +3,7 @@
 """
 from fastapi import APIRouter
 
-from app.api import users, auth, consultations, courses, experts, admin, orders, diagnosis, upload, system, draft_orders, products_simple, simple_orders, cart, wechat_pay
+from app.api import users, auth, consultations, courses, experts, admin, orders, diagnosis, upload, system, draft_orders, products_simple, simple_orders, cart, wechat_pay, shipping
 
 api_router = APIRouter()
 
@@ -23,6 +23,7 @@ api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(products_simple.router, tags=["products-simple"])
 api_router.include_router(cart.router, tags=["cart"])
 api_router.include_router(orders.router, prefix="/orders", tags=["orders"])
+api_router.include_router(shipping.router, prefix="/shipping", tags=["配送管理"])
 api_router.include_router(wechat_pay.router, tags=["微信支付"])
 api_router.include_router(diagnosis.router, tags=["诊断系统"])
 api_router.include_router(upload.router, prefix="", tags=["upload"])
