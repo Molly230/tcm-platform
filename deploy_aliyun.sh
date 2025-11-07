@@ -12,7 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # 配置变量
-PROJECT_DIR="/var/www/tcm-platform"
+PROJECT_DIR="/var/www/tcmlife"
 BACKEND_PORT=8001
 DOMAIN="tcmlife.top"  # 修改为你的域名
 
@@ -48,8 +48,8 @@ else
     echo "克隆项目..."
     mkdir -p /var/www
     cd /var/www
-    git clone https://github.com/Molly230/tcm-platform.git
-    cd tcm-platform
+    git clone https://github.com/Molly230/tcm-platform.git tcmlife
+    cd tcmlife
 fi
 
 # 3. 配置后端
