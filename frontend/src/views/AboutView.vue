@@ -98,101 +98,94 @@
         <h2 class="section-title">业务链条</h2>
         <p class="section-subtitle">评测 - 方案 - 产品 - 社区</p>
 
-        <!-- 2x2 方框布局 -->
-        <div class="business-grid">
-          <!-- 第一行 -->
-          <el-row :gutter="30">
-            <el-col :xs="24" :md="12">
-              <el-card shadow="hover" class="business-box business-box-1">
-                <div class="business-number">01</div>
-                <div class="business-header">
-                  <el-icon :size="50" color="#409EFF"><DataAnalysis /></el-icon>
-                  <h3>智能评测</h3>
-                </div>
-                <ul class="business-list">
-                  <li><el-icon><Check /></el-icon> AI智能问诊</li>
-                  <li><el-icon><Check /></el-icon> 体质量表测评</li>
-                  <li><el-icon><Check /></el-icon> 健康档案管理</li>
-                  <li><el-icon><Check /></el-icon> 数据分析</li>
-                </ul>
-                <el-tag type="primary" effect="dark" class="business-tag">5分钟完成评测</el-tag>
-              </el-card>
-            </el-col>
+        <!-- 1行4列横向布局 -->
+        <el-row :gutter="20" class="business-grid-horizontal">
+          <!-- 01 智能评测 -->
+          <el-col :xs="24" :sm="12" :md="6">
+            <el-card shadow="hover" class="business-box business-box-1">
+              <div class="business-number">01</div>
+              <div class="business-header">
+                <el-icon :size="40" color="#409EFF"><DataAnalysis /></el-icon>
+                <h3>智能评测</h3>
+              </div>
+              <ul class="business-list">
+                <li><el-icon><Check /></el-icon> AI智能问诊</li>
+                <li><el-icon><Check /></el-icon> 体质量表测评</li>
+                <li><el-icon><Check /></el-icon> 健康档案管理</li>
+                <li><el-icon><Check /></el-icon> 数据分析</li>
+              </ul>
+              <el-tag type="primary" effect="dark" class="business-tag">5分钟完成评测</el-tag>
+            </el-card>
+          </el-col>
 
-            <el-col :xs="24" :md="12">
-              <el-card shadow="hover" class="business-box business-box-2">
-                <div class="business-number">02</div>
-                <div class="business-header">
-                  <el-icon :size="50" color="#67C23A"><Document /></el-icon>
-                  <h3>定制方案</h3>
-                </div>
-                <ul class="business-list">
-                  <li><el-icon><Check /></el-icon> 个性化调理方案</li>
-                  <li><el-icon><Check /></el-icon> 专家一对一指导</li>
-                  <li><el-icon><Check /></el-icon> 智能食谱配送</li>
-                  <li><el-icon><Check /></el-icon> 周期健康管理</li>
-                </ul>
-                <el-tag type="success" effect="dark" class="business-tag">精准调理</el-tag>
-              </el-card>
-            </el-col>
-          </el-row>
+          <!-- 02 定制方案 -->
+          <el-col :xs="24" :sm="12" :md="6">
+            <el-card shadow="hover" class="business-box business-box-2">
+              <div class="business-number">02</div>
+              <div class="business-header">
+                <el-icon :size="40" color="#67C23A"><Document /></el-icon>
+                <h3>定制方案</h3>
+              </div>
+              <ul class="business-list">
+                <li><el-icon><Check /></el-icon> 个性化调理方案</li>
+                <li><el-icon><Check /></el-icon> 专家一对一指导</li>
+                <li><el-icon><Check /></el-icon> 智能食谱配送</li>
+                <li><el-icon><Check /></el-icon> 周期健康管理</li>
+              </ul>
+              <el-tag type="success" effect="dark" class="business-tag">精准调理</el-tag>
+            </el-card>
+          </el-col>
 
-          <!-- 中间箭头指示 -->
-          <div class="flow-arrows">
-            <el-icon :size="40" color="#909399"><Bottom /></el-icon>
-          </div>
+          <!-- 03 优质产品 -->
+          <el-col :xs="24" :sm="12" :md="6">
+            <el-card shadow="hover" class="business-box business-box-3">
+              <div class="business-number">03</div>
+              <div class="business-header">
+                <el-icon :size="40" color="#E6A23C"><ShoppingCart /></el-icon>
+                <h3>优质产品</h3>
+              </div>
+              <ul class="business-list">
+                <li><el-icon><Check /></el-icon> 中药材品质保障</li>
+                <li><el-icon><Check /></el-icon> 理疗服务支持</li>
+                <li><el-icon><Check /></el-icon> 健康产品供应</li>
+                <li><el-icon><Check /></el-icon> 食疗配送到家</li>
+              </ul>
+              <el-tag type="warning" effect="dark" class="business-tag">全渠道供应</el-tag>
+            </el-card>
+          </el-col>
 
-          <!-- 第二行 -->
-          <el-row :gutter="30">
-            <el-col :xs="24" :md="12">
-              <el-card shadow="hover" class="business-box business-box-3">
-                <div class="business-number">03</div>
-                <div class="business-header">
-                  <el-icon :size="50" color="#E6A23C"><ShoppingCart /></el-icon>
-                  <h3>优质产品</h3>
+          <!-- 04 健康社区 -->
+          <el-col :xs="24" :sm="12" :md="6">
+            <el-card shadow="hover" class="business-box business-box-4">
+              <div class="business-number">04</div>
+              <div class="business-header">
+                <el-icon :size="40" color="#F56C6C"><ChatDotRound /></el-icon>
+                <h3>健康社区</h3>
+              </div>
+              <ul class="business-list">
+                <li><el-icon><Check /></el-icon> 知识分享交流</li>
+                <li><el-icon><Check /></el-icon> 养生课程学习</li>
+                <li><el-icon><Check /></el-icon> 用户互助分享</li>
+                <li><el-icon><Check /></el-icon> 专家健康讲座</li>
+                <li><el-icon><Check /></el-icon> 理疗服务预约</li>
+              </ul>
+              <el-divider content-position="left">
+                <span style="color: #909399; font-size: 14px;">线下节点</span>
+              </el-divider>
+              <div class="offline-nodes">
+                <div class="node-item">
+                  <el-icon color="#F56C6C"><Location /></el-icon>
+                  <span>养生驿站</span>
                 </div>
-                <ul class="business-list">
-                  <li><el-icon><Check /></el-icon> 中药材品质保障</li>
-                  <li><el-icon><Check /></el-icon> 理疗服务支持</li>
-                  <li><el-icon><Check /></el-icon> 健康产品供应</li>
-                  <li><el-icon><Check /></el-icon> 食疗配送到家</li>
-                </ul>
-                <el-tag type="warning" effect="dark" class="business-tag">全渠道供应</el-tag>
-              </el-card>
-            </el-col>
-
-            <el-col :xs="24" :md="12">
-              <el-card shadow="hover" class="business-box business-box-4">
-                <div class="business-number">04</div>
-                <div class="business-header">
-                  <el-icon :size="50" color="#F56C6C"><ChatDotRound /></el-icon>
-                  <h3>健康社区</h3>
+                <div class="node-item">
+                  <el-icon color="#F56C6C"><Location /></el-icon>
+                  <span>旗舰中心</span>
                 </div>
-                <ul class="business-list">
-                  <li><el-icon><Check /></el-icon> 知识分享交流</li>
-                  <li><el-icon><Check /></el-icon> 养生课程学习</li>
-                  <li><el-icon><Check /></el-icon> 用户互助分享</li>
-                  <li><el-icon><Check /></el-icon> 专家健康讲座</li>
-                  <li><el-icon><Check /></el-icon> 理疗服务预约</li>
-                </ul>
-                <el-divider content-position="left">
-                  <span style="color: #909399; font-size: 14px;">线下节点</span>
-                </el-divider>
-                <div class="offline-nodes">
-                  <div class="node-item">
-                    <el-icon color="#F56C6C"><Location /></el-icon>
-                    <span>养生驿站</span>
-                  </div>
-                  <div class="node-item">
-                    <el-icon color="#F56C6C"><Location /></el-icon>
-                    <span>旗舰中心</span>
-                  </div>
-                </div>
-                <el-tag type="danger" effect="dark" class="business-tag">长效管理</el-tag>
-              </el-card>
-            </el-col>
-          </el-row>
-        </div>
+              </div>
+              <el-tag type="danger" effect="dark" class="business-tag">长效管理</el-tag>
+            </el-card>
+          </el-col>
+        </el-row>
 
       </div>
 
@@ -514,16 +507,33 @@ const handleContact = () => {
   margin-bottom: 40px;
 }
 
-.business-grid {
+/* 1行4列横向布局 */
+.business-grid-horizontal {
   margin-top: 40px;
+}
+
+.business-grid-horizontal .business-box {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .business-box {
   height: 100%;
-  min-height: 450px;
+  min-height: 500px;
   position: relative;
   transition: all 0.3s;
   border: 3px solid transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+.business-box .business-list {
+  flex: 1;
+}
+
+.business-box .business-tag {
+  margin-top: auto;
 }
 
 .business-box:hover {
@@ -603,7 +613,7 @@ const handleContact = () => {
 
 .flow-arrows {
   text-align: center;
-  margin: 30px 0;
+  margin: 20px 0;
   animation: bounce 2s infinite;
 }
 
@@ -819,8 +829,16 @@ const handleContact = () => {
     margin-bottom: 20px;
   }
 
+  .business-grid-horizontal .el-col {
+    margin-bottom: 20px;
+  }
+
+  .business-header {
+    padding: 15px 0;
+  }
+
   .business-header h3 {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .business-number {
