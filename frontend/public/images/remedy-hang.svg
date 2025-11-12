@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <!-- 背景渐变 -->
+  <defs>
+    <linearGradient id="bgGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fde68a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <rect width="400" height="300" fill="url(#bgGradient2)"/>
+
+  <!-- 横杠 -->
+  <rect x="150" y="30" width="100" height="12" rx="6" fill="#8b5cf6" stroke="#6d28d9" stroke-width="2"/>
+  <circle cx="170" cy="36" r="3" fill="#c4b5fd"/>
+  <circle cx="200" cy="36" r="3" fill="#c4b5fd"/>
+  <circle cx="230" cy="36" r="3" fill="#c4b5fd"/>
+
+  <!-- 绳子/支撑 -->
+  <line x1="200" y1="42" x2="200" y2="80" stroke="#6d28d9" stroke-width="3" stroke-dasharray="5,3"/>
+
+  <!-- 倒吊的人（头朝下） -->
+  <!-- 脚（上方） -->
+  <ellipse cx="195" cy="70" rx="12" ry="8" fill="#fbbf24"/>
+  <ellipse cx="205" cy="70" rx="12" ry="8" fill="#fbbf24"/>
+
+  <!-- 腿 -->
+  <rect x="193" y="70" width="6" height="50" rx="3" fill="#fb923c"/>
+  <rect x="201" y="70" width="6" height="50" rx="3" fill="#fb923c"/>
+
+  <!-- 身体 -->
+  <ellipse cx="200" cy="140" rx="30" ry="45" fill="#60a5fa" stroke="#3b82f6" stroke-width="2"/>
+
+  <!-- 手臂（向下伸展） -->
+  <rect x="165" y="155" width="8" height="45" rx="4" fill="#fb923c" transform="rotate(-15 169 155)"/>
+  <rect x="227" y="155" width="8" height="45" rx="4" fill="#fb923c" transform="rotate(15 231 155)"/>
+
+  <!-- 手掌 -->
+  <ellipse cx="163" cy="205" rx="10" ry="12" fill="#fbbf24" transform="rotate(-15 163 205)"/>
+  <ellipse cx="237" cy="205" rx="10" ry="12" fill="#fbbf24" transform="rotate(15 237 205)"/>
+
+  <!-- 头（最下方，倒立） -->
+  <circle cx="200" cy="195" r="22" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"/>
+  <!-- 简单的五官 -->
+  <circle cx="193" cy="192" r="3" fill="#2d3748"/>
+  <circle cx="207" cy="192" r="3" fill="#2d3748"/>
+  <path d="M 193 202 Q 200 199, 207 202" stroke="#2d3748" stroke-width="2" fill="none"/>
+
+  <!-- 头发（向下） -->
+  <path d="M 185 200 Q 180 210, 175 215" stroke="#4a5568" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 215 200 Q 220 210, 225 215" stroke="#4a5568" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 200 210 Q 200 218, 200 223" stroke="#4a5568" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- 运动线条 -->
+  <path d="M 160 120 Q 150 130, 145 140" stroke="#8b5cf6" stroke-width="2" opacity="0.5" fill="none" stroke-dasharray="3,3"/>
+  <path d="M 240 120 Q 250 130, 255 140" stroke="#8b5cf6" stroke-width="2" opacity="0.5" fill="none" stroke-dasharray="3,3"/>
+
+  <!-- 醒目大字 -->
+  <text x="300" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="56" font-weight="900" fill="#8b5cf6" stroke="white" stroke-width="3">
+    倒吊
+  </text>
+
+  <!-- 文字说明 -->
+  <text x="200" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#2d3748">
+    倒吊身体
+  </text>
+  <text x="200" y="285" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#8b5cf6">
+    促进血液循环 改善失眠
+  </text>
+</svg>

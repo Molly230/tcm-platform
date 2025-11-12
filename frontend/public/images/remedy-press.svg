@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <!-- 背景渐变 -->
+  <defs>
+    <linearGradient id="bgGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0f2fe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#bae6fd;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="pressGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#ff6b6b;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="400" height="300" fill="url(#bgGradient1)"/>
+
+  <!-- 被按压的手（底层） -->
+  <ellipse cx="200" cy="180" rx="80" ry="100" fill="#ffd9b3" stroke="#cc9966" stroke-width="3"/>
+  <path d="M 140 180 Q 130 160, 125 140 Q 123 120, 130 110 Q 140 105, 148 115 L 160 140 Q 165 160, 165 180"
+        fill="#ffd9b3" stroke="#cc9966" stroke-width="2"/>
+
+  <!-- 穴位标记 -->
+  <circle cx="135" cy="115" r="15" fill="url(#pressGlow)"/>
+  <circle cx="135" cy="115" r="10" fill="#ff4444"/>
+  <circle cx="135" cy="115" r="5" fill="white"/>
+
+  <!-- 按压的手指（上层，突出显示） -->
+  <ellipse cx="135" cy="85" rx="18" ry="35" fill="#ffb380" stroke="#996633" stroke-width="3"
+           transform="rotate(-25 135 85)"/>
+  <ellipse cx="135" cy="75" rx="15" ry="20" fill="#ffcc99" stroke="#996633" stroke-width="2"
+           transform="rotate(-25 135 75)"/>
+
+  <!-- 按压方向箭头 -->
+  <defs>
+    <marker id="arrowPress" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto">
+      <polygon points="0 2, 12 6, 0 10" fill="#ff6b6b"/>
+    </marker>
+  </defs>
+  <path d="M 100 70 L 120 95" stroke="#ff6b6b" stroke-width="4" marker-end="url(#arrowPress)"/>
+
+  <!-- 力量线条效果 -->
+  <line x1="120" y1="100" x2="145" y2="125" stroke="#ff6b6b" stroke-width="2" opacity="0.6"/>
+  <line x1="125" y1="95" x2="150" y2="120" stroke="#ff6b6b" stroke-width="2" opacity="0.6"/>
+  <line x1="130" y1="90" x2="155" y2="115" stroke="#ff6b6b" stroke-width="2" opacity="0.6"/>
+
+  <!-- 醒目大字 -->
+  <text x="280" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="56" font-weight="900" fill="#ff6b6b" stroke="white" stroke-width="3">
+    按压
+  </text>
+
+  <!-- 文字说明 -->
+  <text x="200" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#2d3748">
+    用力按压少商穴
+  </text>
+  <text x="200" y="285" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#667eea">
+    缓解喉咙干痛
+  </text>
+</svg>

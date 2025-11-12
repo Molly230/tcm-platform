@@ -4,7 +4,6 @@
       <h1 class="logo" @click="$router.push('/')">中医健康服务平台</h1>
       <nav class="nav">
         <el-button link @click="$router.push('/')">首页</el-button>
-        <el-button link @click="$router.push('/solutions')">方案</el-button>
         <el-button link @click="$router.push('/learning-center')">学习中心</el-button>
         <el-button link @click="$router.push('/products')">商城</el-button>
         <el-button link @click="$router.push('/about')">关于我们</el-button>
